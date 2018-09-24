@@ -43,6 +43,5 @@ void plotEff(int q2Bin, int tagFlag, int maxOrder, int xbins=25, int ybins = 0, 
 
 #### Macros under development, outdated, or to test alternative methods
 
-
-
- LocalWords:  xbins ybins zbins ntuple boolean
+* `test*.cc` set of macros using toy pseudo-experiments originated with analytical function, to test efficiency parameterisation
+* `projEff_spHarm_kernel.cc` projection method applied to the output of a simple adaptive KDE sampling
