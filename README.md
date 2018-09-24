@@ -4,7 +4,7 @@ This repository contains all the macros used to parametrise the **signal efficie
 The workflow is structured as a chain of macros, each one taking as input a root file produced in the previous step.
 The initial inputs are two ntuples, produced with the code contained in the
 [B0KstMuMuNtuple repo](https://github.com/CMSKStarMuMu/B0KstMuMuNtuple)
-(snapshot: https://github.com/CMSKStarMuMu/B0KstMuMuNtuple/commit/d898840ee78df072b0d3862e3c141df79f0aeb5b),
+( [snapshot](https://github.com/CMSKStarMuMu/B0KstMuMuNtuple/commit/d898840ee78df072b0d3862e3c141df79f0aeb5b) ),
  while the final output is a RooAbsReal object containing the 3D function that describes the efficiency.
 
 ## Macro list
