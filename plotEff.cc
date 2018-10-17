@@ -59,7 +59,7 @@ void plotEff(int q2Bin, int tagFlag, int maxOrder, int xbins=25, int ybins = 0, 
 void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins)
 {
 
-  string shortString = Form(tagFlag?"b%ict":"b%iwt",q2Bin);
+  string shortString = Form(tagFlag?"b%ict_testLowStat":"b%iwt_testLowStat",q2Bin);
   string longString  = Form(tagFlag?"q2 bin %i correct-tag":"q2 bin %i wrong-tag",q2Bin);
   int confIndex = (tagFlag?q2Bin:q2Bin+nBins);
 
@@ -84,7 +84,7 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   RooRealVar* phi = ws->var("phi");
   RooArgSet vars (* ctK,* ctL,* phi);
   // set a variable for weights, to correct GEN distributions in closure test
-  RooRealVar wei ("wei","weight",0,1);
+  RooRealVar wei ("wei","weight",0,1e4);
 
   // Plot efficiency projections
   gStyle->SetOptStat(0);
@@ -139,13 +139,13 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   // Load ntuples
   TChain* t_den = new TChain();
   TChain* t_num = new TChain();
-  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_LMNR_double_sub*_p*.root/ntuple");
+  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/gen_B0_miniaodWithoutGenCuts.root/tree");
   t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2p3_newtag_LMNR_addW_add4BDT_addvars_bestBDTv4.root/ntuple");
   int denEntries = t_den->GetEntries();
   int numEntries = t_num->GetEntries();
   int counter;
 
-  double genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
+  float genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
   double recoCosThetaK, recoCosThetaL, recoPhi;
   float recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
   t_den->SetBranchAddress( "gen_cos_theta_k" , &genCosThetaK );
@@ -184,7 +184,7 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
     ctL->setVal(genCosThetaL);
     phi->setVal(genPhi);
     // set event weight based on local efficiency value
-    wei.setVal( eff->getVal( vars ) );
+    wei.setVal( eff->getVal( vars ) * 1e4 );
     data->add( RooArgSet(vars,wei) );    
   }
   // create the weighted dataset for GEN events

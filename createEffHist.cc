@@ -25,6 +25,7 @@ RooRealVar ctK ("ctK","cos(#theta_{K})",-1,1);
 RooRealVar ctL ("ctL","cos(#theta_{L})",-1,1);
 RooRealVar phi ("phi","#phi",-TMath::Pi(),TMath::Pi());
 RooArgSet vars (ctK, ctL, phi);
+RooRealVar wei ("wei","weight",1e4);
 
 void createEffHist(int q2Bin, int tagFlag=1, int xbins=25, int ybins = 0, int zbins = 0)
 {
@@ -66,28 +67,28 @@ void createEffHist(int q2Bin, int tagFlag=1, int xbins=25, int ybins = 0, int zb
 void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
 {
 
-  string shortString = Form(tagFlag?"b%ict":"b%iwt",q2Bin);
+  string shortString = Form(tagFlag?"b%ict_testLowStat":"b%iwt_testLowStat",q2Bin);
   string longString  = Form(tagFlag?"q2 bin %i correct-tag":"q2 bin %i wrong-tag",q2Bin);
   int confIndex = (tagFlag?q2Bin:q2Bin+nBins);
 
   // Load ntuples
   TChain* t_den = new TChain();
   TChain* t_num = new TChain();
-  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_LMNR_double_sub*_p*.root/ntuple");
+  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/gen_B0_miniaodWithoutGenCuts.root/tree");
   t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2p3_newtag_LMNR_addW_add4BDT_addvars_bestBDTv4.root/ntuple");
   int denEntries = t_den->GetEntries();
   int numEntries = t_num->GetEntries();
   int counter;
 
-  double genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
+  float genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
   double recoCosThetaK, recoCosThetaL, recoPhi;
   float recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
-  t_den->SetBranchAddress( "gen_cos_theta_k" , &genCosThetaK );
-  t_den->SetBranchAddress( "gen_cos_theta_l" , &genCosThetaL );
-  t_den->SetBranchAddress( "gen_phi_kst_mumu", &genPhi       );
-  t_den->SetBranchAddress( "genq2"           , &genDimuMass  );
-  t_den->SetBranchAddress( "genbPt"          , &genB0pT      );
-  t_den->SetBranchAddress( "genbEta"         , &genB0eta     );
+  t_den->SetBranchAddress( "gen_cos_theta_k", &genCosThetaK );
+  t_den->SetBranchAddress( "gen_cos_theta_l", &genCosThetaL );
+  t_den->SetBranchAddress( "gen_phi"        , &genPhi       );
+  t_den->SetBranchAddress( "mumu_mass"      , &genDimuMass  );
+  t_den->SetBranchAddress( "b0_pt"          , &genB0pT      );
+  t_den->SetBranchAddress( "b0_eta"         , &genB0eta     );
   t_num->SetBranchAddress( "cos_theta_k" , &recoCosThetaK );
   t_num->SetBranchAddress( "cos_theta_l" , &recoCosThetaL );
   t_num->SetBranchAddress( "phi_kst_mumu", &recoPhi       );
@@ -97,7 +98,7 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
   t_num->SetBranchAddress( "genSignal"   , &genSignal     );
   t_num->SetBranchAddress( "tagB0"       , &tagB0         );
 
-  RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution after GEN-filter" , vars );
+  RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution" , RooArgSet(vars,wei) );
   RooDataSet* numData = new RooDataSet( "numData", "RECO distribution after selections", vars ); 
 
   // Prepare denominator datasets
@@ -117,8 +118,10 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
     ctK.setVal(genCosThetaK);
     ctL.setVal(genCosThetaL);
     phi.setVal(genPhi);
-    data->add(vars);    
+    data->add( RooArgSet(vars,wei) );
   }
+  // create the weighted dataset for GEN events
+  RooDataSet* wdata = new RooDataSet(data->GetName(),data->GetTitle(),data,*data->get(),0,wei.GetName());
 
   // Prepare numerator datasets
   cout<<"Starting numerator dataset filling..."<<endl;
@@ -144,7 +147,7 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
   cout<<"Dataset prepared"<<endl;
 
   // compute and print average efficiency
-  double avgEff = numData->sumEntries() / data->sumEntries();
+  double avgEff = numData->sumEntries() / wdata->sumEntries();
   cout<<"Average efficiency = "<<avgEff<<endl;
 
   if (plot) {
@@ -155,9 +158,9 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
     RooPlot* xframe = ctK.frame(Title((longString+" cos(#theta_{K}) distributions").c_str()));
     RooPlot* yframe = ctL.frame(Title((longString+" cos(#theta_{L}) distributions").c_str()));
     RooPlot* zframe = phi.frame(Title((longString+" #phi distributions").c_str()));
-    data->plotOn(xframe,Rescale(rescFac),MarkerColor(kRed+1),LineColor(kRed+1),Binning(30),Name("plDenDist"));
-    data->plotOn(yframe,Rescale(rescFac),MarkerColor(kRed+1),LineColor(kRed+1),Binning(30));
-    data->plotOn(zframe,Rescale(rescFac),MarkerColor(kRed+1),LineColor(kRed+1),Binning(30));
+    wdata->plotOn(xframe,Rescale(rescFac),MarkerColor(kRed+1),LineColor(kRed+1),Binning(30),Name("plDenDist"));
+    wdata->plotOn(yframe,Rescale(rescFac),MarkerColor(kRed+1),LineColor(kRed+1),Binning(30));
+    wdata->plotOn(zframe,Rescale(rescFac),MarkerColor(kRed+1),LineColor(kRed+1),Binning(30));
     numData->plotOn(xframe,Binning(30),Name("plNumDist"));
     numData->plotOn(yframe,Binning(30));
     numData->plotOn(zframe,Binning(30));
@@ -187,7 +190,7 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
   }
 
   // create numerator and denominator histograms
-  TH3D* denHist = (TH3D*)data   ->createHistogram( ("denHist"+shortString).c_str(),
+  TH3D* denHist = (TH3D*)wdata  ->createHistogram( ("denHist"+shortString).c_str(),
 						   ctK,     Binning(xbins,-1,1) ,
 						   YVar(ctL,Binning(ybins,-1,1)),
 						   ZVar(phi,Binning(zbins,-TMath::Pi(),TMath::Pi())) );

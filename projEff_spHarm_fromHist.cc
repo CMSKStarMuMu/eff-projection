@@ -66,7 +66,7 @@ void projEff_spHarm_fromHist(int q2Bin, int tagFlag, int maxOrder = 5, int xbins
 void projEff_spHarm_fromHistBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins)
 {
 
-  string shortString = Form(tagFlag?"b%ict":"b%iwt",q2Bin);
+  string shortString = Form(tagFlag?"b%ict_testLowStat":"b%iwt_testLowStat",q2Bin);
   string longString  = Form(tagFlag?"q2 bin %i correct-tag":"q2 bin %i wrong-tag",q2Bin);
   int confIndex = (tagFlag?q2Bin:q2Bin+nBins);
 
