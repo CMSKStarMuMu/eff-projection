@@ -148,12 +148,12 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   float genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
   double recoCosThetaK, recoCosThetaL, recoPhi;
   float recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
-  t_den->SetBranchAddress( "gen_cos_theta_k" , &genCosThetaK );
-  t_den->SetBranchAddress( "gen_cos_theta_l" , &genCosThetaL );
-  t_den->SetBranchAddress( "gen_phi_kst_mumu", &genPhi       );
-  t_den->SetBranchAddress( "genq2"           , &genDimuMass  );
-  t_den->SetBranchAddress( "genbPt"          , &genB0pT      );
-  t_den->SetBranchAddress( "genbEta"         , &genB0eta     );
+  t_den->SetBranchAddress( "gen_cos_theta_k", &genCosThetaK );
+  t_den->SetBranchAddress( "gen_cos_theta_l", &genCosThetaL );
+  t_den->SetBranchAddress( "gen_phi"        , &genPhi       );
+  t_den->SetBranchAddress( "mumu_mass"      , &genDimuMass  );
+  t_den->SetBranchAddress( "b0_pt"          , &genB0pT      );
+  t_den->SetBranchAddress( "b0_eta"         , &genB0eta     );
   t_num->SetBranchAddress( "cos_theta_k" , &recoCosThetaK );
   t_num->SetBranchAddress( "cos_theta_l" , &recoCosThetaL );
   t_num->SetBranchAddress( "phi_kst_mumu", &recoPhi       );
