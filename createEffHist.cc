@@ -128,8 +128,8 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
     // selct q2 range and tag status
     if ( ( pow(recoDimuMass,2) > binBorders[q2Bin+1] ) ||
 	 ( pow(recoDimuMass,2) < binBorders[q2Bin]   ) || 
-	 ( ( tagFlag) && (genSignal == tagB0+1) ) ||
-	 ( (!tagFlag) && (genSignal != tagB0+1) ) ) continue;
+	 ( ( tagFlag) && (genSignal == tagB0+3) ) ||
+	 ( (!tagFlag) && (genSignal != tagB0+3) ) ) continue;
     // status display
     if ( iCand > 1.0*counter*numEntries/100 ) {
       cout<<counter<<"%"<<endl;
@@ -149,7 +149,7 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
 
   if (plot) {
     // Plot 1D distributions of numerator and denominator datasets
-    double rescFac = 1;
+    double rescFac = 0.1;
     c[confIndex] = new TCanvas(("c_"+shortString).c_str(),("Num and Den 1D projections - "+longString).c_str(),2000,700);
     TLegend* leg = new TLegend(0.4,0.8,0.9,0.9);
     RooPlot* xframe = ctK.frame(Title((longString+" cos(#theta_{K}) distributions").c_str()));

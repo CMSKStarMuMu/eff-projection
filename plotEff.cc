@@ -198,8 +198,8 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
     // selct q2 range and tag status
     if ( ( pow(recoDimuMass,2) > binBorders[q2Bin+1] ) ||
 	 ( pow(recoDimuMass,2) < binBorders[q2Bin]   ) || 
-	 ( ( tagFlag) && (genSignal == tagB0+1) ) ||
-	 ( (!tagFlag) && (genSignal != tagB0+1) ) ) continue;
+	 ( ( tagFlag) && (genSignal == tagB0+3) ) ||
+	 ( (!tagFlag) && (genSignal != tagB0+3) ) ) continue;
     // status display
     if ( iCand > 1.0*counter*numEntries/100 ) {
       cout<<counter<<"%"<<endl;
