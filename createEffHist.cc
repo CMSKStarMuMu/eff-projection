@@ -66,15 +66,15 @@ void createEffHist(int q2Bin, int tagFlag=1, int xbins=25, int ybins = 0, int zb
 void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
 {
 
-  string shortString = Form(tagFlag?"b%ict":"b%iwt",q2Bin);
-  string longString  = Form(tagFlag?"q2 bin %i correct-tag":"q2 bin %i wrong-tag",q2Bin);
+  string shortString = Form(tagFlag?"b%ict_JpsiCh":"b%iwt_JpsiCh",q2Bin);
+  string longString  = Form(tagFlag?"Jpsi q2 bin %i correct-tag":"Jpsi q2 bin %i wrong-tag",q2Bin);
   int confIndex = (tagFlag?q2Bin:q2Bin+nBins);
 
   // Load ntuples
   TChain* t_den = new TChain();
   TChain* t_num = new TChain();
-  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_LMNR_double_sub*_p*.root/ntuple");
-  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2p3_newtag_LMNR_addW_add4BDT_addvars_bestBDTv4.root/ntuple");
+  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_B0ToJpsiKStar_BFilter.root/ntuple");
+  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2_newtag_JPsi_add4BDT_addvars_bestBDTv4.root/ntuple");
   int denEntries = t_den->GetEntries();
   int numEntries = t_num->GetEntries();
   int counter;
@@ -82,9 +82,9 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
   double genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
   double recoCosThetaK, recoCosThetaL, recoPhi;
   float recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
-  t_den->SetBranchAddress( "gen_cos_theta_k" , &genCosThetaK );
-  t_den->SetBranchAddress( "gen_cos_theta_l" , &genCosThetaL );
-  t_den->SetBranchAddress( "gen_phi_kst_mumu", &genPhi       );
+  t_den->SetBranchAddress( "cos_theta_k" , &genCosThetaK );
+  t_den->SetBranchAddress( "cos_theta_l" , &genCosThetaL );
+  t_den->SetBranchAddress( "phi_kst_mumu", &genPhi       );
   t_den->SetBranchAddress( "genq2"           , &genDimuMass  );
   t_den->SetBranchAddress( "genbPt"          , &genB0pT      );
   t_den->SetBranchAddress( "genbEta"         , &genB0eta     );
@@ -97,7 +97,7 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
   t_num->SetBranchAddress( "genSignal"   , &genSignal     );
   t_num->SetBranchAddress( "tagB0"       , &tagB0         );
 
-  RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution after GEN-filter" , vars );
+  RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution before GEN-filter" , vars );
   RooDataSet* numData = new RooDataSet( "numData", "RECO distribution after selections", vars ); 
 
   // Prepare denominator datasets
@@ -149,7 +149,7 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
 
   if (plot) {
     // Plot 1D distributions of numerator and denominator datasets
-    double rescFac = 0.03;
+    double rescFac = 1;
     c[confIndex] = new TCanvas(("c_"+shortString).c_str(),("Num and Den 1D projections - "+longString).c_str(),2000,700);
     TLegend* leg = new TLegend(0.4,0.8,0.9,0.9);
     RooPlot* xframe = ctK.frame(Title((longString+" cos(#theta_{K}) distributions").c_str()));

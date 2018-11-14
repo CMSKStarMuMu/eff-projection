@@ -59,8 +59,8 @@ void plotEff(int q2Bin, int tagFlag, int maxOrder, int xbins=25, int ybins = 0, 
 void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins)
 {
 
-  string shortString = Form(tagFlag?"b%ict":"b%iwt",q2Bin);
-  string longString  = Form(tagFlag?"q2 bin %i correct-tag":"q2 bin %i wrong-tag",q2Bin);
+  string shortString = Form(tagFlag?"b%ict_JpsiCh":"b%iwt_JpsiCh",q2Bin);
+  string longString  = Form(tagFlag?"Jpsi q2 bin %i correct-tag":"Jpsi q2 bin %i wrong-tag",q2Bin);
   int confIndex = (tagFlag?q2Bin:q2Bin+nBins);
 
   // open file with efficiency and import efficiency function and variables
@@ -139,8 +139,8 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   // Load ntuples
   TChain* t_den = new TChain();
   TChain* t_num = new TChain();
-  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_LMNR_double_sub*_p*.root/ntuple");
-  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2p3_newtag_LMNR_addW_add4BDT_addvars_bestBDTv4.root/ntuple");
+  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_B0ToJpsiKStar_BFilter.root/ntuple");
+  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2_newtag_JPsi_add4BDT_addvars_bestBDTv4.root/ntuple");
   int denEntries = t_den->GetEntries();
   int numEntries = t_num->GetEntries();
   int counter;
@@ -148,9 +148,9 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   double genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
   double recoCosThetaK, recoCosThetaL, recoPhi;
   float recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
-  t_den->SetBranchAddress( "gen_cos_theta_k" , &genCosThetaK );
-  t_den->SetBranchAddress( "gen_cos_theta_l" , &genCosThetaL );
-  t_den->SetBranchAddress( "gen_phi_kst_mumu", &genPhi       );
+  t_den->SetBranchAddress( "cos_theta_k" , &genCosThetaK );
+  t_den->SetBranchAddress( "cos_theta_l" , &genCosThetaL );
+  t_den->SetBranchAddress( "phi_kst_mumu", &genPhi       );
   t_den->SetBranchAddress( "genq2"           , &genDimuMass  );
   t_den->SetBranchAddress( "genbPt"          , &genB0pT      );
   t_den->SetBranchAddress( "genbEta"         , &genB0eta     );
@@ -163,7 +163,7 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   t_num->SetBranchAddress( "genSignal"   , &genSignal     );
   t_num->SetBranchAddress( "tagB0"       , &tagB0         );
 
-  RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution after GEN-filter" , RooArgSet(vars,wei) );
+  RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution before GEN-filter" , RooArgSet(vars,wei) );
   RooDataSet* numData = new RooDataSet( "numData", "RECO distribution after selections", vars ); 
 
   // Prepare denominator datasets
