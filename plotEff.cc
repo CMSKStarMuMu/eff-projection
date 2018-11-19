@@ -59,8 +59,8 @@ void plotEff(int q2Bin, int tagFlag, int maxOrder, int xbins=25, int ybins = 0, 
 void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins)
 {
 
-  string shortString = Form(tagFlag?"b%ict_JpsiCh":"b%iwt_JpsiCh",q2Bin);
-  string longString  = Form(tagFlag?"Jpsi q2 bin %i correct-tag":"Jpsi q2 bin %i wrong-tag",q2Bin);
+  string shortString = Form(tagFlag?"b%ict":"b%iwt",q2Bin);
+  string longString  = Form(tagFlag?"q2 bin %i correct-tag":"q2 bin %i wrong-tag",q2Bin);
   int confIndex = (tagFlag?q2Bin:q2Bin+nBins);
 
   // open file with efficiency and import efficiency function and variables
@@ -127,9 +127,6 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   h3_xz->GetYaxis()->SetTitleOffset(2);
   h3_yz->GetXaxis()->SetTitleOffset(1.4);
   h3_yz->GetYaxis()->SetTitleOffset(2);
-  h3_xy->SetMinimum(0.0);
-  h3_xz->SetMinimum(0.0);
-  h3_yz->SetMinimum(0.0);
   c3[confIndex]->Divide(3,1);
   c3[confIndex]->cd(1);
   h3_xy->Draw("SURF3");
@@ -142,8 +139,8 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   // Load ntuples
   TChain* t_den = new TChain();
   TChain* t_num = new TChain();
-  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_B0ToJpsiKStar_BFilter.root/ntuple");
-  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2_newtag_JPsi_add4BDT_addvars_bestBDTv4.root/ntuple");
+  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_LMNR_double_sub*_p*.root/ntuple");
+  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2p3_newtag_LMNR_addW_add4BDT_addvars_bestBDTv4.root/ntuple");
   int denEntries = t_den->GetEntries();
   int numEntries = t_num->GetEntries();
   int counter;
@@ -151,9 +148,9 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   double genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
   double recoCosThetaK, recoCosThetaL, recoPhi;
   float recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
-  t_den->SetBranchAddress( "cos_theta_k" , &genCosThetaK );
-  t_den->SetBranchAddress( "cos_theta_l" , &genCosThetaL );
-  t_den->SetBranchAddress( "phi_kst_mumu", &genPhi       );
+  t_den->SetBranchAddress( "gen_cos_theta_k" , &genCosThetaK );
+  t_den->SetBranchAddress( "gen_cos_theta_l" , &genCosThetaL );
+  t_den->SetBranchAddress( "gen_phi_kst_mumu", &genPhi       );
   t_den->SetBranchAddress( "genq2"           , &genDimuMass  );
   t_den->SetBranchAddress( "genbPt"          , &genB0pT      );
   t_den->SetBranchAddress( "genbEta"         , &genB0eta     );
@@ -166,12 +163,8 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   t_num->SetBranchAddress( "genSignal"   , &genSignal     );
   t_num->SetBranchAddress( "tagB0"       , &tagB0         );
 
-  RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution before GEN-filter" , RooArgSet(vars,wei) );
+  RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution after GEN-filter" , RooArgSet(vars,wei) );
   RooDataSet* numData = new RooDataSet( "numData", "RECO distribution after selections", vars ); 
-
-  // Set counter to evaluate size of negatine-efficiency regions
-  int badCounter = 0;
-  int totalCounter = 0;
 
   // Prepare denominator datasets
   cout<<"Starting denominator dataset filling..."<<endl;
@@ -192,10 +185,7 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
     phi->setVal(genPhi);
     // set event weight based on local efficiency value
     wei.setVal( eff->getVal( vars ) );
-    data->add( RooArgSet(vars,wei) );
-    // count negative efficiency values
-    ++totalCounter;
-    if ( wei.getValV() < 0 ) ++badCounter;
+    data->add( RooArgSet(vars,wei) );    
   }
   // create the weighted dataset for GEN events
   RooDataSet* wdata = new RooDataSet(data->GetName(),data->GetTitle(),data,*data->get(),0,wei.GetName());
@@ -208,8 +198,8 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
     // selct q2 range and tag status
     if ( ( pow(recoDimuMass,2) > binBorders[q2Bin+1] ) ||
 	 ( pow(recoDimuMass,2) < binBorders[q2Bin]   ) || 
-	 ( ( tagFlag) && (genSignal == tagB0+3) ) ||
-	 ( (!tagFlag) && (genSignal != tagB0+3) ) ) continue;
+	 ( ( tagFlag) && (genSignal == tagB0+1) ) ||
+	 ( (!tagFlag) && (genSignal != tagB0+1) ) ) continue;
     // status display
     if ( iCand > 1.0*counter*numEntries/100 ) {
       cout<<counter<<"%"<<endl;
@@ -222,9 +212,6 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
     numData->add(vars);    
   }
   cout<<"Dataset prepared"<<endl;
-
-  // Print size of negative-efficiency regions
-  cout<<"Negative efficiency phase-space fraction: "<<badCounter<<"/"<<totalCounter<<" -> "<<1.0*badCounter/totalCounter<<endl;
 
   // Plot projections for closure test (RECO vs. eff*GEN)
   c[confIndex] = new TCanvas (("c_"+shortString).c_str(),("Closure test - "+longString).c_str(),2000,700);
