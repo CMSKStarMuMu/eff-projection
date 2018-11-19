@@ -127,6 +127,9 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   h3_xz->GetYaxis()->SetTitleOffset(2);
   h3_yz->GetXaxis()->SetTitleOffset(1.4);
   h3_yz->GetYaxis()->SetTitleOffset(2);
+  h3_xy->SetMinimum(0.0);
+  h3_xz->SetMinimum(0.0);
+  h3_yz->SetMinimum(0.0);
   c3[confIndex]->Divide(3,1);
   c3[confIndex]->cd(1);
   h3_xy->Draw("SURF3");
@@ -166,6 +169,10 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution after GEN-filter" , RooArgSet(vars,wei) );
   RooDataSet* numData = new RooDataSet( "numData", "RECO distribution after selections", vars ); 
 
+  // Set counter to evaluate size of negatine-efficiency regions
+  int badCounter = 0;
+  int totalCounter = 0;
+
   // Prepare denominator datasets
   cout<<"Starting denominator dataset filling..."<<endl;
   counter=0;
@@ -186,6 +193,9 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
     // set event weight based on local efficiency value
     wei.setVal( eff->getVal( vars ) );
     data->add( RooArgSet(vars,wei) );    
+    // count negative efficiency values
+    ++totalCounter;
+    if ( wei.getValV() < 0 ) ++badCounter;
   }
   // create the weighted dataset for GEN events
   RooDataSet* wdata = new RooDataSet(data->GetName(),data->GetTitle(),data,*data->get(),0,wei.GetName());
@@ -212,6 +222,9 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
     numData->add(vars);    
   }
   cout<<"Dataset prepared"<<endl;
+
+  // Print size of negative-efficiency regions
+  cout<<"Negative efficiency phase-space fraction: "<<badCounter<<"/"<<totalCounter<<" -> "<<1.0*badCounter/totalCounter<<endl;
 
   // Plot projections for closure test (RECO vs. eff*GEN)
   c[confIndex] = new TCanvas (("c_"+shortString).c_str(),("Closure test - "+longString).c_str(),2000,700);
