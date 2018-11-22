@@ -143,14 +143,14 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   TChain* t_den = new TChain();
   TChain* t_num = new TChain();
   t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_B0ToJpsiKStar_BFilter.root/ntuple");
-  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2_newtag_JPsi_add4BDT_addvars_bestBDTv4.root/ntuple");
+  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/NtupleNov21/2016MC_PSI_bdt0p96.root/ntuple");
   int denEntries = t_den->GetEntries();
   int numEntries = t_num->GetEntries();
   int counter;
 
   double genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
   double recoCosThetaK, recoCosThetaL, recoPhi;
-  float recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
+  double recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
   t_den->SetBranchAddress( "cos_theta_k" , &genCosThetaK );
   t_den->SetBranchAddress( "cos_theta_l" , &genCosThetaL );
   t_den->SetBranchAddress( "phi_kst_mumu", &genPhi       );
@@ -232,12 +232,12 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   RooPlot* xframe = ctK->frame(Title((longString+" cos(#theta_{K}) distributions").c_str()));
   RooPlot* yframe = ctL->frame(Title((longString+" cos(#theta_{L}) distributions").c_str()));
   RooPlot* zframe = phi->frame(Title((longString+" #phi distributions").c_str()));
-  wdata->plotOn(xframe,MarkerColor(kRed+1),LineColor(kRed+1),Binning(30),DataError(RooAbsData::SumW2),Name("plDenDist"));
-  wdata->plotOn(yframe,MarkerColor(kRed+1),LineColor(kRed+1),Binning(30),DataError(RooAbsData::SumW2));
-  wdata->plotOn(zframe,MarkerColor(kRed+1),LineColor(kRed+1),Binning(30),DataError(RooAbsData::SumW2));
-  numData->plotOn(xframe,Binning(30),Name("plNumDist"));
-  numData->plotOn(yframe,Binning(30));
-  numData->plotOn(zframe,Binning(30));
+  wdata->plotOn(xframe,MarkerColor(kRed+1),LineColor(kRed+1),Binning(40),DataError(RooAbsData::SumW2),Name("plDenDist"));
+  wdata->plotOn(yframe,MarkerColor(kRed+1),LineColor(kRed+1),Binning(40),DataError(RooAbsData::SumW2));
+  wdata->plotOn(zframe,MarkerColor(kRed+1),LineColor(kRed+1),Binning(40),DataError(RooAbsData::SumW2));
+  numData->plotOn(xframe,Binning(40),Name("plNumDist"));
+  numData->plotOn(yframe,Binning(40));
+  numData->plotOn(zframe,Binning(40));
   xframe->GetYaxis()->SetTitleOffset(1.6);
   yframe->GetYaxis()->SetTitleOffset(1.6);
   zframe->GetYaxis()->SetTitleOffset(1.6);

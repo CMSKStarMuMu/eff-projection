@@ -74,14 +74,14 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
   TChain* t_den = new TChain();
   TChain* t_num = new TChain();
   t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_B0ToJpsiKStar_BFilter.root/ntuple");
-  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2_newtag_JPsi_add4BDT_addvars_bestBDTv4.root/ntuple");
+  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/NtupleNov21/2016MC_PSI_bdt0p96.root/ntuple");
   int denEntries = t_den->GetEntries();
   int numEntries = t_num->GetEntries();
   int counter;
 
   double genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
   double recoCosThetaK, recoCosThetaL, recoPhi;
-  float recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
+  double recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
   t_den->SetBranchAddress( "cos_theta_k" , &genCosThetaK );
   t_den->SetBranchAddress( "cos_theta_l" , &genCosThetaL );
   t_den->SetBranchAddress( "phi_kst_mumu", &genPhi       );
@@ -149,18 +149,18 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
 
   if (plot) {
     // Plot 1D distributions of numerator and denominator datasets
-    double rescFac = 0.1;
+    double rescFac = 0.5;
     c[confIndex] = new TCanvas(("c_"+shortString).c_str(),("Num and Den 1D projections - "+longString).c_str(),2000,700);
     TLegend* leg = new TLegend(0.4,0.8,0.9,0.9);
     RooPlot* xframe = ctK.frame(Title((longString+" cos(#theta_{K}) distributions").c_str()));
     RooPlot* yframe = ctL.frame(Title((longString+" cos(#theta_{L}) distributions").c_str()));
     RooPlot* zframe = phi.frame(Title((longString+" #phi distributions").c_str()));
-    data->plotOn(xframe,Rescale(rescFac),MarkerColor(kRed+1),LineColor(kRed+1),Binning(30),Name("plDenDist"));
-    data->plotOn(yframe,Rescale(rescFac),MarkerColor(kRed+1),LineColor(kRed+1),Binning(30));
-    data->plotOn(zframe,Rescale(rescFac),MarkerColor(kRed+1),LineColor(kRed+1),Binning(30));
-    numData->plotOn(xframe,Binning(30),Name("plNumDist"));
-    numData->plotOn(yframe,Binning(30));
-    numData->plotOn(zframe,Binning(30));
+    data->plotOn(xframe,Rescale(rescFac),MarkerColor(kRed+1),LineColor(kRed+1),Binning(40),Name("plDenDist"));
+    data->plotOn(yframe,Rescale(rescFac),MarkerColor(kRed+1),LineColor(kRed+1),Binning(40));
+    data->plotOn(zframe,Rescale(rescFac),MarkerColor(kRed+1),LineColor(kRed+1),Binning(40));
+    numData->plotOn(xframe,Binning(40),Name("plNumDist"));
+    numData->plotOn(yframe,Binning(40));
+    numData->plotOn(zframe,Binning(40));
     xframe->GetYaxis()->SetTitleOffset(1.6);
     yframe->GetYaxis()->SetTitleOffset(1.6);
     zframe->GetYaxis()->SetTitleOffset(1.6);
