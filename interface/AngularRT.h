@@ -11,8 +11,11 @@
 #include "RooRealProxy.h"
 #include "RooCategoryProxy.h"
 #include "RooAbsReal.h"
+#include "RooRealVar.h"
 #include "RooAbsCategory.h"
- 
+#include "RooLegendre.h"
+#include "RooFormulaVar.h"
+
 class AngularRT : public RooAbsPdf {
  protected:
 
@@ -29,6 +32,10 @@ class AngularRT : public RooAbsPdf {
   RooRealProxy P8p ;
   
   Double_t evaluate() const ;
+
+  std::vector < RooLegendre* > vectFuncLegCosK;
+  std::vector < RooLegendre* > vectFuncLegCosL;
+  std::vector < RooFormulaVar* > vectFuncPoly;
 
  public:
   AngularRT() {} ; 

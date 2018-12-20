@@ -26,7 +26,7 @@ TCanvas* c [nBins];
 void fit_genMCBin(int q2Bin)
 {
 
-  string shortString = Form("b%i_JpsiCh",q2Bin);
+  string shortString = Form("b%i_JpsiCh_LegTest",q2Bin);
   string longString  = Form("Jpsi q2 bin %i",q2Bin);
   int confIndex = q2Bin;
 
@@ -46,11 +46,16 @@ void fit_genMCBin(int q2Bin)
 
   RooAbsPdf* _AnglesPDF = new AngularRT("_AnglesPDF","_AnglesPDF",*ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
 
+  // _AnglesPDF->Print("v");
+  // P2->setVal(1);
+  // ctL->setVal(1);
+  // cout<<_AnglesPDF->getValV()<<endl;
+  // return;
 
   // Load ntuples
   TChain* t_den = new TChain();
   t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_B0ToJpsiKStar_BFilter.root/ntuple");
-  int denEntries = t_den->GetEntries();
+  int denEntries = t_den->GetEntries() /1000; // DEBUG
 
   double genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
   t_den->SetBranchAddress( "cos_theta_k" , &genCosThetaK );
@@ -80,14 +85,16 @@ void fit_genMCBin(int q2Bin)
     data->add( vars );
   }
 
-  RooFitResult * fitResult = _AnglesPDF->fitTo(*data,Save(true),Timer(true),NumCPU(6));
+  RooFitResult * fitResult = _AnglesPDF->fitTo(*data,Minimizer("Minuit2","migrad"),Save(true),Timer(true)); 
+  // RooFitResult * fitResult = _AnglesPDF->fitTo(*data,Save(true),Timer(true),NumCPU(6));
   // RooFitResult * fitResult = _AnglesPDF->fitTo(*data,Extended(true),Save(true),Timer(true));
 
   fitResult->Print("v");
-  TFile f (("fitResult_genMC_"+shortString+".root").c_str(),"UPDATE") ;
-  f.cd();
-  fitResult->Write("fitResult");
-  f.Close();
+  // return; 			// DEBUG
+  // TFile f (("fitResult_genMC_"+shortString+".root").c_str(),"UPDATE") ;
+  // f.cd();
+  // fitResult->Write("fitResult");
+  // f.Close();
 
   c[confIndex] = new TCanvas (("c_"+shortString).c_str(),("Fit to GEN-level MC - "+longString).c_str(),2000,700);
   TLegend* leg = new TLegend (0.25,0.8,0.9,0.9);

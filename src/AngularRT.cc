@@ -41,6 +41,35 @@ AngularRT::AngularRT(const char *name, const char *title,
   P6p("P6p","P6p",this,_P6p),
   P8p("P8p","P8p",this,_P8p)
 { 
+  // define the Legendre and trigonometric polynomals
+  for (int xOrder=0; xOrder<=2; ++xOrder)
+    for (int zOrder=0; zOrder<=xOrder; ++zOrder) {
+      // cosTK terms by associated Legendre polynomials (degree l=xOrder m=zOrder)
+      vectFuncLegCosK.push_back( new RooLegendre ( Form("funcLegctK%i_%i",xOrder,zOrder),
+						   Form("funcLegctK%i_%i",xOrder,zOrder),
+						   ctK, xOrder, abs(zOrder) ) );
+    }
+
+  for (int yOrder=0; yOrder<=2; ++yOrder)
+    for (int zOrder=0; zOrder<=yOrder; ++zOrder) {
+      // cosTL terms by associated Legendre polynomials (degree l=yOrder m=zOrder)
+      vectFuncLegCosL.push_back( new RooLegendre ( Form("funcLegctL%i_%i",yOrder,zOrder),
+						   Form("funcLegctL%i_%i",yOrder,zOrder),
+						   ctL, yOrder, abs(zOrder) ) );
+    }
+
+  for (int zOrder=-2; zOrder<=2; ++zOrder) {
+    // phi terms by trigonometric polynomials (degree zOrder)
+    if (zOrder>0)
+      vectFuncPoly.push_back( new RooFormulaVar( Form("funcPoly%i",zOrder),
+						 Form("funcPoly%i",zOrder),
+						 Form("cos(%i*phi)",zOrder), phi ) );
+    if (zOrder<0)
+      vectFuncPoly.push_back( new RooFormulaVar( Form("funcPoly%i",zOrder),
+						 Form("funcPoly%i",zOrder),
+						 Form("sin(%i*phi)",-1*zOrder), phi ) );
+  }
+
 } 
 
 
@@ -58,6 +87,11 @@ AngularRT::AngularRT(const AngularRT& other, const char* name) :
   P6p("P6p",this,other.P6p),
   P8p("P8p",this,other.P8p)
 { 
+
+  vectFuncLegCosK = other.vectFuncLegCosK;
+  vectFuncLegCosL = other.vectFuncLegCosL;
+  vectFuncPoly    = other.vectFuncPoly;
+
 } 
 
 
@@ -65,16 +99,36 @@ AngularRT::AngularRT(const AngularRT& other, const char* name) :
 Double_t AngularRT::evaluate() const 
 { 
   return (9./(32 * 3.14159265) * (
-				  0.75 * (1-Fl) * (1-ctK*ctK) +
-				  Fl * ctK*ctK +
-				  ( 0.25 * (1-Fl) * (1-ctK*ctK) - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
-				  0.5 * P1 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * cos(2*phi) +
-				  2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( P4p * ctL * sqrt(1-ctL*ctL) + P5p * sqrt(1-ctL*ctL) ) +
-				  2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) +
-				  2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL -
-				  P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi)
-				 )
+				  (4.0/9.0)             * vectFuncLegCosL[0]->getVal() * vectFuncLegCosK[0]->getVal() +
+				  (4.0*Fl/3.0-4.0/9.0)  * vectFuncLegCosL[0]->getVal() * vectFuncLegCosK[3]->getVal() +
+				  (2.0/9.0-2.0*Fl/3.0)  * vectFuncLegCosL[3]->getVal() * vectFuncLegCosK[0]->getVal() +
+				  (-2.0/9.0-2.0*Fl/3.0) * vectFuncLegCosL[3]->getVal() * vectFuncLegCosK[3]->getVal() +
+
+				  ( 4.0/3.0)*P2*(1-Fl) * vectFuncLegCosL[1]->getVal() * vectFuncLegCosK[0]->getVal() +
+				  (-4.0/3.0)*P2*(1-Fl) * vectFuncLegCosL[1]->getVal() * vectFuncLegCosK[3]->getVal() +
+
+				  (1-Fl)/18.0*P1 * vectFuncLegCosL[5]->getVal() * vectFuncLegCosK[5]->getVal() * vectFuncPoly[3]->getVal() +
+				  (Fl-1)/ 9.0*P3 * vectFuncLegCosL[5]->getVal() * vectFuncLegCosK[5]->getVal() * vectFuncPoly[0]->getVal() +
+
+				  ( 2.0/9.0)*sqrt(Fl-Fl*Fl)*P4p * vectFuncLegCosL[4]->getVal() * vectFuncLegCosK[4]->getVal() * vectFuncPoly[2]->getVal() +
+				  ( 2.0/3.0)*sqrt(Fl-Fl*Fl)*P5p * vectFuncLegCosL[2]->getVal() * vectFuncLegCosK[4]->getVal() * vectFuncPoly[2]->getVal() +
+				  ( 2.0/9.0)*sqrt(Fl-Fl*Fl)*P8p * vectFuncLegCosL[4]->getVal() * vectFuncLegCosK[4]->getVal() * vectFuncPoly[1]->getVal() +
+				  (-2.0/3.0)*sqrt(Fl-Fl*Fl)*P6p * vectFuncLegCosL[2]->getVal() * vectFuncLegCosK[4]->getVal() * vectFuncPoly[1]->getVal()
+
+				  )
 	  );
+
+  // return (9./(32 * 3.14159265) * (
+  // 				  0.75 * (1-Fl) * (1-ctK*ctK) +
+  // 				  Fl * ctK*ctK +
+  // 				  ( 0.25 * (1-Fl) * (1-ctK*ctK) - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
+  // 				  0.5 * P1 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * cos(2*phi) +
+  // 				  2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( P4p * ctL * sqrt(1-ctL*ctL) + P5p * sqrt(1-ctL*ctL) ) +
+  // 				  2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) +
+  // 				  2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL -
+  // 				  P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi)
+  // 				 )
+  // 	  );
 } 
 
 
