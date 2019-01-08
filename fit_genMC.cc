@@ -13,7 +13,6 @@
 #include <RooPlot.h>
 
 #include "AngularRT.h"
-#include "AngularWT.h"
 
 using namespace RooFit;
 using namespace std;
@@ -46,30 +45,24 @@ void fit_genMCBin(int q2Bin)
 
   RooAbsPdf* _AnglesPDF = new AngularRT("_AnglesPDF","_AnglesPDF",*ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
 
-  // _AnglesPDF->Print("v");
-  // P2->setVal(1);
-  // ctL->setVal(1);
-  // cout<<_AnglesPDF->getValV()<<endl;
-  // return;
-
   // Load ntuples
-  TChain* t_den = new TChain();
-  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_B0ToJpsiKStar_BFilter.root/ntuple");
-  int denEntries = t_den->GetEntries() /1000; // DEBUG
+  TChain* tChain = new TChain();
+  tChain->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_B0ToJpsiKStar_BFilter.root/ntuple");
+  int denEntries = tChain->GetEntries();
 
   double genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
-  t_den->SetBranchAddress( "cos_theta_k" , &genCosThetaK );
-  t_den->SetBranchAddress( "cos_theta_l" , &genCosThetaL );
-  t_den->SetBranchAddress( "phi_kst_mumu", &genPhi       );
-  t_den->SetBranchAddress( "genq2"       , &genDimuMass  );
-  t_den->SetBranchAddress( "genbPt"      , &genB0pT      );
-  t_den->SetBranchAddress( "genbEta"     , &genB0eta     );
+  tChain->SetBranchAddress( "cos_theta_k" , &genCosThetaK );
+  tChain->SetBranchAddress( "cos_theta_l" , &genCosThetaL );
+  tChain->SetBranchAddress( "phi_kst_mumu", &genPhi       );
+  tChain->SetBranchAddress( "genq2"       , &genDimuMass  );
+  tChain->SetBranchAddress( "genbPt"      , &genB0pT      );
+  tChain->SetBranchAddress( "genbEta"     , &genB0eta     );
 
   RooDataSet* data = new RooDataSet( "data", "GEN distribution before GEN-filter" , vars );
 
   int counter=0;
   for (int iCand=0; iCand<denEntries; ++iCand) {
-    t_den->GetEntry(iCand);
+    tChain->GetEntry(iCand);
     // select q2 range
     if ( ( pow(genDimuMass,2) > binBorders[q2Bin+1] ) ||
 	 ( pow(genDimuMass,2) < binBorders[q2Bin]   ) ) continue;
@@ -86,15 +79,12 @@ void fit_genMCBin(int q2Bin)
   }
 
   RooFitResult * fitResult = _AnglesPDF->fitTo(*data,Minimizer("Minuit2","migrad"),Save(true),Timer(true)); 
-  // RooFitResult * fitResult = _AnglesPDF->fitTo(*data,Save(true),Timer(true),NumCPU(6));
-  // RooFitResult * fitResult = _AnglesPDF->fitTo(*data,Extended(true),Save(true),Timer(true));
-
   fitResult->Print("v");
-  // return; 			// DEBUG
-  // TFile f (("fitResult_genMC_"+shortString+".root").c_str(),"UPDATE") ;
-  // f.cd();
-  // fitResult->Write("fitResult");
-  // f.Close();
+
+  TFile f (("fitResult_genMC_"+shortString+".root").c_str(),"UPDATE") ;
+  f.cd();
+  fitResult->Write("fitResult");
+  f.Close();
 
   c[confIndex] = new TCanvas (("c_"+shortString).c_str(),("Fit to GEN-level MC - "+longString).c_str(),2000,700);
   TLegend* leg = new TLegend (0.25,0.8,0.9,0.9);

@@ -9,10 +9,6 @@
 #include "Riostream.h" 
 
 #include "AngularWT.h" 
-#include "RooAbsReal.h" 
-#include "RooAbsCategory.h" 
-#include <math.h> 
-#include "TMath.h" 
 
 ClassImp(AngularWT) 
 
@@ -64,18 +60,144 @@ AngularWT::AngularWT(const AngularWT& other, const char* name) :
 
 Double_t AngularWT::evaluate() const 
 { 
+  // computing values of associated-Legendre polynomials at current coordinates
+  double L00 = ROOT::Math::assoc_legendre(0,0,ctL);
+  double L10 = ROOT::Math::assoc_legendre(1,0,ctL);
+  double L11 = ROOT::Math::assoc_legendre(1,1,ctL);
+  double L20 = ROOT::Math::assoc_legendre(2,0,ctL);
+  double L21 = ROOT::Math::assoc_legendre(2,1,ctL);
+  double L22 = ROOT::Math::assoc_legendre(2,2,ctL);
+
+  double K00 = ROOT::Math::assoc_legendre(0,0,ctK);
+  double K20 = ROOT::Math::assoc_legendre(2,0,ctK);
+  double K21 = ROOT::Math::assoc_legendre(2,1,ctK);
+  double K22 = ROOT::Math::assoc_legendre(2,2,ctK);
+
+  // using them in the angular decay rate for wrong-tagged events
   return (9./(32 * 3.14159265) * (
-				  0.75 * (1-Fl) * (1-ctK*ctK) +
-				  Fl * ctK*ctK +
-				  ( 0.25 * (1-Fl) * (1-ctK*ctK) - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
-				  0.5 * P1 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * cos(2*phi) -
-				  2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P4p * ctL * sqrt(1-ctL*ctL) + P5p * sqrt(1-ctL*ctL) ) +
-				  2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) -
-				  2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL +
-				  P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi)
-				 )
+				  (4.0/9.0)             * L00 * K00 +
+				  (4.0*Fl/3.0-4.0/9.0)  * L00 * K20 +
+				  (2.0/9.0-2.0*Fl/3.0)  * L20 * K00 +
+				  (-2.0/9.0-2.0*Fl/3.0) * L20 * K20 +
+
+				  (-4.0/3.0)*P2*(1-Fl) * L10 * K00 +
+				  ( 4.0/3.0)*P2*(1-Fl) * L10 * K20 +
+
+				  (1-Fl)/18.0*P1 * L22 * K22 * cos(2*phi) +
+				  (1-Fl)/ 9.0*P3 * L22 * K22 * sin(2*phi) +
+
+				  ( 2.0/9.0)*sqrt(Fl-Fl*Fl)*P4p * L21 * K21 * cos(phi) +
+				  (-2.0/3.0)*sqrt(Fl-Fl*Fl)*P5p * L11 * K21 * cos(phi) +
+				  (-2.0/9.0)*sqrt(Fl-Fl*Fl)*P8p * L21 * K21 * sin(phi) +
+				  (-2.0/3.0)*sqrt(Fl-Fl*Fl)*P6p * L11 * K21 * sin(phi)
+
+				  )
 	  );
+
 } 
 
+namespace {
+  Bool_t fullRangeCosT(const RooRealProxy& x ,const char* range)
+  {
+    // set accepted integration range for cosTheta variables
+    return range == 0 || strlen(range) == 0
+      ? std::fabs(x.min() + 1.) < 1.e-5 && std::fabs(x.max() - 1.) < 1.e-5
+      : std::fabs(x.min(range) + 1.) < 1.e-5 && std::fabs(x.max(range) - 1.) < 1.e-5;
+  }
+  Bool_t fullRangePhi(const RooRealProxy& x ,const char* range)
+  {
+    // set accepted integration range for phi variable
+    return range == 0 || strlen(range) == 0
+      ? std::fabs(x.min() + TMath::Pi()) < 1.e-3 && std::fabs(x.max() - TMath::Pi()) < 1.e-3
+      : std::fabs(x.min(range) + TMath::Pi()) < 1.e-3 && std::fabs(x.max(range) - TMath::Pi()) < 1.e-3;
+  }
+}
 
+Int_t AngularWT::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
+{
+  // use analytical integral for any subset of the angular variables
+  if (matchArgs(allVars,analVars,ctK,ctL,phi)) {
+    if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) ) return 7 ;
+    else return 0 ;
+  }
+  if (matchArgs(allVars,analVars,ctL,phi)) {
+    if ( fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName)  ) return 6 ;
+    else return 0 ;
+  }
+  if (matchArgs(allVars,analVars,ctK,phi)) {
+    if ( fullRangeCosT(ctK,rangeName) && fullRangePhi(phi,rangeName)  ) return 5 ;
+    else return 0 ;
+  }
+  if (matchArgs(allVars,analVars,ctK,ctL)) {
+    if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) ) return 4 ;
+    else return 0 ;
+  }
+  if (matchArgs(allVars,analVars,phi)) {
+    if ( fullRangePhi(phi,rangeName)  ) return 3 ;
+    else return 0 ;
+  }
+  if (matchArgs(allVars,analVars,ctL)) {
+    if ( fullRangeCosT(ctL,rangeName) ) return 2 ;
+    else return 0 ;
+  }
+  if (matchArgs(allVars,analVars,ctK)) {
+    if ( fullRangeCosT(ctK,rangeName) ) return 1 ;
+    else return 0 ;
+  }
+  return 0 ;
+}
 
+Double_t AngularWT::analyticalIntegral(Int_t code, const char* rangeName) const
+{
+  assert(code>0 && code<8) ;
+
+  // define the variables for Lagrange-poly values, but compute them only when needed
+  double L00, L10, L20, L22, K00, K20, K21, K22;
+
+  Double_t ret = 0;
+
+  // for each subset of integrated variables return the formula of the remaining decay rate
+  switch (code) {
+  case 7:
+    ret = 9./(32 * 3.14159265) * ( 4.0/9.0 ) * (2*TMath::Pi() * 2 * 2);
+    break;
+  case 6:
+    K00 = ROOT::Math::assoc_legendre(0,0,ctK);
+    K20 = ROOT::Math::assoc_legendre(2,0,ctK);
+    ret = 9./(32 * 3.14159265) * ( 4.0/9.0*K00 + (4.0*Fl/3.0-4.0/9.0)*K20 ) * (2*TMath::Pi() * 2);
+    break;
+  case 5:
+    L00 = ROOT::Math::assoc_legendre(0,0,ctL);
+    L20 = ROOT::Math::assoc_legendre(2,0,ctL);
+    ret = 9./(32 * 3.14159265) * ( 4.0/9.0*L00 + (2.0/9.0-2.0*Fl/3.0)*L20 ) * (2*TMath::Pi() * 2);
+    break;
+  case 4:
+    ret = 9./(32 * 3.14159265) * ( 4.0/9.0 + (1-Fl)/18.0*P1*cos(2*phi)*2*2 + (1-Fl)/9.0*P3*sin(2*phi)*2*2 ) * (2 * 2);
+    break;
+  case 3:
+    L00 = ROOT::Math::assoc_legendre(0,0,ctL);
+    L10 = ROOT::Math::assoc_legendre(1,0,ctL);
+    L20 = ROOT::Math::assoc_legendre(2,0,ctL);
+    K00 = ROOT::Math::assoc_legendre(0,0,ctK);
+    K20 = ROOT::Math::assoc_legendre(2,0,ctK);
+    ret = 9./(32 * 3.14159265) * ( (4.0/9.0)*L00*K00 + (4.0*Fl/3.0-4.0/9.0)*L00*K20 + (2.0/9.0-2.0*Fl/3.0)*L20*K00 + (-2.0/9.0-2.0*Fl/3.0)*L20*K20 + (-4.0/3.0)*P2*(1-Fl)*L10*K00 + (4.0/3.0)*P2*(1-Fl)*L10*K20 ) * (2*TMath::Pi());
+    break;
+  case 2:
+    K00 = ROOT::Math::assoc_legendre(0,0,ctK);
+    K20 = ROOT::Math::assoc_legendre(2,0,ctK);
+    K21 = ROOT::Math::assoc_legendre(2,1,ctK);
+    K22 = ROOT::Math::assoc_legendre(2,2,ctK);
+    ret = 9./(32 * 3.14159265) * ( (4.0/9.0)*K00 + (4.0*Fl/3.0-4.0/9.0)*K20 + (1-Fl)/18.0*P1*K22*cos(2*phi)*2 + (1-Fl)/9.0*P3*K22*sin(2*phi)*2 + (-2.0/3.0)*sqrt(Fl-Fl*Fl)*P5p*K21*cos(phi)*TMath::Pi()/4 + (-2.0/3.0)*sqrt(Fl-Fl*Fl)*P6p*K21*sin(phi)*TMath::Pi()/4 ) * (2);
+    break;
+  case 1:
+    L00 = ROOT::Math::assoc_legendre(0,0,ctL);
+    L10 = ROOT::Math::assoc_legendre(1,0,ctL);
+    L20 = ROOT::Math::assoc_legendre(2,0,ctL);
+    L22 = ROOT::Math::assoc_legendre(2,2,ctL);
+    ret = 9./(32 * 3.14159265) * ( (4.0/9.0)*L00 + (2.0/9.0-2.0*Fl/3.0)*L20 + (-4.0/3.0)*P2*(1-Fl)*L10 + (1-Fl)/18.0*P1*L22*cos(2*phi)*2 + (1-Fl)/9.0*P3*L22*sin(2*phi)*2) * (2);
+    break;
+  }
+
+  return ret ;
+
+}

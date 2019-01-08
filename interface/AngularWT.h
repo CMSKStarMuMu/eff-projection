@@ -7,11 +7,17 @@
 #ifndef ANGULARWT
 #define ANGULARWT
 
+#include <math.h>
+#include "Math/SpecFunc.h"
+#include "TMath.h"
+
 #include "RooAbsPdf.h"
 #include "RooRealProxy.h"
 #include "RooCategoryProxy.h"
 #include "RooAbsReal.h"
 #include "RooAbsCategory.h"
+#include "RooFit.h"
+#include "Riostream.h"
  
 class AngularWT : public RooAbsPdf {
  protected:
@@ -47,6 +53,9 @@ class AngularWT : public RooAbsPdf {
   AngularWT(const AngularWT& other, const char* name=0) ;
   virtual TObject* clone(const char* newname) const { return new AngularWT(*this,newname); }
   inline virtual ~AngularWT() { }
+
+  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
+  Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
 
   ClassDef(AngularWT,1) // PDF for angular decay rate description
     };

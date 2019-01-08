@@ -3,7 +3,7 @@
 #include <TCanvas.h>
 #include <TAxis.h>
 #include <TLegend.h>
-#include <Math/Functor.h>
+#include <TMath.h>
 
 #include <RooRealVar.h>
 #include <RooAbsPdf.h>
@@ -11,54 +11,15 @@
 #include <RooDataSet.h>
 #include <RooFitResult.h>
 #include <RooPlot.h>
-#include <RooFunctorBinding.h>
-#include <RooEffProd.h>
-#include <RooMinuit.h>
 
-#include "AngularRT.h"
-#include "AngularWT.h"
+#include "PdfRT.h"
+#include "PdfWT.h"
 
 using namespace RooFit;
 using namespace std;
 
 static const int nBins = 9;
 float binBorders [nBins+1] = { 1, 2, 4.3, 6, 8.68, 10.09, 12.86, 14.18, 16, 19};
-
-struct MyProdPdf
-{
-public:
-  MyProdPdf (RooAbsReal& pdf1, RooAbsReal& pdf2) : _pdf1(pdf1), _pdf2(pdf2)
-  {
-    const RooArgSet* allvar1 = pdf1.getVariables();
-    const RooArgSet* allvar2 = pdf2.getVariables();
-    _vars.add(*allvar1);
-    _vars.add(*allvar2,false);
-    delete allvar1;
-    delete allvar2;
-  }
-
-  int ndim ()
-  {
-    return _vars.getSize();
-  }
-
-  const RooArgList& vars() const
-  {
-    return _vars;
-  }
-
-  double operator() (const double* v)
-  {
-    for (int i = 0; i < ndim(); ++i) ((RooRealVar&)_vars[i]).setVal(v[i]);
-    return _pdf1.getVal() * _pdf2.getVal();
-  }
-
-private:
-  RooAbsReal& _pdf1;
-  RooAbsReal& _pdf2;
-  RooArgList _vars;
-};
-
 
 TCanvas* c [2*nBins];
 
@@ -69,7 +30,7 @@ void fit_recoMC_projEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int
   string longString  = Form(tagFlag?"Jpsi q2 bin %i correct-tag":"Jpsi q2 bin %i wrong-tag",q2Bin);
   int confIndex = (tagFlag?q2Bin:q2Bin+nBins);
 
-  // open file with efficiency and import efficiency function and variables
+  // open file with efficiency and import efficiency coefficients and variables
   TFile* fin = new TFile( ( Form("effProjection_sh%io_",maxOrder)+shortString+Form("_%i_%i_%i.root",xbins,ybins,zbins)).c_str(), "READ" );
   if ( !fin || !fin->IsOpen() ) {
     cout<<Form("File not found: effProjection_sh%io_",maxOrder)<<shortString<<Form("_%i_%i_%i.root",xbins,ybins,zbins)<<endl;
@@ -80,11 +41,15 @@ void fit_recoMC_projEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int
     cout<<Form("Workspace not found in file: effProjection_sh%io_",maxOrder)<<shortString<<Form("_%i_%i_%i.root",xbins,ybins,zbins)<<endl;
     return;
   } 
-  RooAbsReal* eff = ws->function("projectedFunc");
-  if ( !eff || eff->IsZombie() ) {
-    cout<<Form("Efficiency not found in file: effProjection_sh%io_",maxOrder)<<shortString<<Form("_%i_%i_%i.root",xbins,ybins,zbins)<<endl;
-    return;
-  } 
+
+  // import the efficiency coefficients
+  RooArgList* EffCoeff = new RooArgList("EffCoeff");
+  int k_ord, l_ord, m_ord;
+  for (k_ord=0; k_ord<=maxOrder; ++k_ord)
+    for (l_ord=0; l_ord<=maxOrder; ++l_ord)
+      for (m_ord=-1*TMath::Min(k_ord,l_ord); m_ord<=TMath::Min(k_ord,l_ord); ++m_ord)
+	EffCoeff->add(*ws->var(Form("l%i_k%i_m%i",k_ord,l_ord,m_ord)));
+
   RooRealVar* ctK = ws->var("ctK");
   RooRealVar* ctL = ws->var("ctL");
   RooRealVar* phi = ws->var("phi");
@@ -99,41 +64,36 @@ void fit_recoMC_projEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int
   RooRealVar* P6p = new RooRealVar("P6p","P'_{6}",0,-1,1);
   RooRealVar* P8p = new RooRealVar("P8p","P'_{8}",0,-1,1);
 
-  RooAbsPdf* _AnglesPDF = 0;
-  if (tagFlag) _AnglesPDF = new AngularRT("_AnglesPDF","_AnglesPDF",*ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
-  else         _AnglesPDF = new AngularWT("_AnglesPDF","_AnglesPDF",*ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
+  RooAbsPdf* AnglesPDF = 0;
+  if (tagFlag) AnglesPDF = new PdfRT("AnglesPDF","AnglesPDF",*ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*EffCoeff,maxOrder);
+  else         AnglesPDF = new PdfWT("AnglesPDF","AnglesPDF",*ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*EffCoeff,maxOrder);
 
-  // MyProdPdf* myprodpdf = new MyProdPdf (*_AnglesPDF, *eff);
-  // ROOT::Math::Functor* prodFunctor = new ROOT::Math::Functor(*myprodpdf,myprodpdf->ndim());
-  // RooAbsPdf* AnglesPDF  = new RooFunctorPdfBinding("AngleS","Signal * Efficiency",*prodFunctor,myprodpdf->vars());
-  RooAbsPdf* AnglesPDF  = new RooEffProd ("AngleS","Signal * Efficiency", *_AnglesPDF, *eff);
- 
   // Load ntuples
-  TChain* t_num = new TChain();
-  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2_newtag_JPsi_add4BDT_addvars_bestBDTv4.root/ntuple");
-  int numEntries = t_num->GetEntries()/1000; // DEBUG
+  TChain* tChain = new TChain();
+  tChain->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2_newtag_JPsi_add4BDT_addvars_bestBDTv4.root/ntuple");
+  int numEntries = tChain->GetEntries();
 
   double recoCosThetaK, recoCosThetaL, recoPhi;
   float recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
-  t_num->SetBranchAddress( "cos_theta_k" , &recoCosThetaK );
-  t_num->SetBranchAddress( "cos_theta_l" , &recoCosThetaL );
-  t_num->SetBranchAddress( "phi_kst_mumu", &recoPhi       );
-  t_num->SetBranchAddress( "mumuMass"    , &recoDimuMass  );
-  t_num->SetBranchAddress( "bPt"         , &recoB0pT      );
-  t_num->SetBranchAddress( "bEta"        , &recoB0eta     );
-  t_num->SetBranchAddress( "genSignal"   , &genSignal     );
-  t_num->SetBranchAddress( "tagB0"       , &tagB0         );
+  tChain->SetBranchAddress( "cos_theta_k" , &recoCosThetaK );
+  tChain->SetBranchAddress( "cos_theta_l" , &recoCosThetaL );
+  tChain->SetBranchAddress( "phi_kst_mumu", &recoPhi       );
+  tChain->SetBranchAddress( "mumuMass"    , &recoDimuMass  );
+  tChain->SetBranchAddress( "bPt"         , &recoB0pT      );
+  tChain->SetBranchAddress( "bEta"        , &recoB0eta     );
+  tChain->SetBranchAddress( "genSignal"   , &genSignal     );
+  tChain->SetBranchAddress( "tagB0"       , &tagB0         );
 
   RooDataSet* data = new RooDataSet( "data", "RECO distribution after selections", vars ); 
 
   int counter=0;
   for (int iCand=0; iCand<numEntries; ++iCand) {
-    t_num->GetEntry(iCand);
+    tChain->GetEntry(iCand);
     // selct q2 range and tag status
     if ( ( pow(recoDimuMass,2) > binBorders[q2Bin+1] ) ||
-	 ( pow(recoDimuMass,2) < binBorders[q2Bin]   ) || 
-	 ( ( tagFlag) && (genSignal == tagB0+3) ) ||
-	 ( (!tagFlag) && (genSignal != tagB0+3) ) ) continue;
+  	 ( pow(recoDimuMass,2) < binBorders[q2Bin]   ) || 
+  	 ( ( tagFlag) && (genSignal == tagB0+3) ) ||
+  	 ( (!tagFlag) && (genSignal != tagB0+3) ) ) continue;
     // status display
     if ( iCand > 1.0*counter*numEntries/100 ) {
       cout<<counter<<"%"<<endl;
@@ -146,18 +106,10 @@ void fit_recoMC_projEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int
     data->add(vars);    
   }
 
-  // // RooAbsReal *nll = (*TotalPDF)->createNLL(*dataSet,Extended(true),Hesse(false),Save(true));
-  // RooAbsReal* nll = AnglesPDF->createNLL(*data);  RooFitResult * fitResult = 0;
-  // RooMinuit Minuit(*nll) ;
-  // Minuit.migrad() ;  
-
-  RooFitResult * fitResult = AnglesPDF->fitTo(*data,Minimizer("Minuit2","migrad"),Save(true),Timer(true),Strategy(0)); 
-  // RooFitResult * fitResult = AnglesPDF->fitTo(*data,Save(true),Timer(true),NumCPU(6)); 
-  // RooFitResult * fitResult = AnglesPDF->fitTo(*data,Extended(true),Save(true),Timer(true));
+  RooFitResult * fitResult = AnglesPDF->fitTo(*data,Minimizer("Minuit2","migrad"),Save(true),Timer(true)); 
   fitResult->Print("v");
 
-  return; 			// DEBUG
-  TFile f (("fitResult_recoMC_"+shortString+Form("_%i_%i_%i_sh%io.root",xbins,ybins,zbins,maxOrder)).c_str(),"UPDATE") ;
+  TFile f (("fitResult_recoMC_"+shortString+Form("_LegTest_%i_%i_%i_sh%io.root",xbins,ybins,zbins,maxOrder)).c_str(),"UPDATE") ;
   f.cd();
   fitResult->Write("fitResult");
   f.Close();
@@ -184,7 +136,7 @@ void fit_recoMC_projEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int
   zframe->SetMinimum(0);
   leg->SetTextSize(0.03);
   leg->AddEntry(xframe->findObject("plData"),"Post-selection distribution" ,"lep");
-  leg->AddEntry(xframe->findObject("plPDF" ),Form("Decay rate x efficiency (%ith-order projection)",maxOrder) ,"l");
+  leg->AddEntry(xframe->findObject("plPDF" ),Form("Decay rate x efficiency (%ith order)",maxOrder) ,"l");
 
   c[confIndex]->Divide(3,1);
   c[confIndex]->cd(1);
@@ -200,7 +152,7 @@ void fit_recoMC_projEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int
   zframe->Draw();
   leg->Draw("same");
 
-  c[confIndex]->SaveAs( ("fitResult_recoMC_"+shortString+Form("_%i_%i_%i_sh%io.pdf",xbins,ybins,zbins,maxOrder)).c_str() );
+  c[confIndex]->SaveAs( ("fitResult_recoMC_"+shortString+Form("_LegTest_%i_%i_%i_sh%io.pdf",xbins,ybins,zbins,maxOrder)).c_str() );
 
 }
 
