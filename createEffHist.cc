@@ -73,21 +73,21 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
   // Load ntuples
   TChain* t_den = new TChain();
   TChain* t_num = new TChain();
-  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_LMNR_double_sub*_p*.root/ntuple");
-  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2p3_newtag_LMNR_addW_add4BDT_addvars_bestBDTv4.root/ntuple");
+  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN_NoFilter/GEN_BFilter_B0MuMuKstar_p*.root/ntuple");
+  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/NtupleNov21/2016MC_LMNR_bdt0p96.root/ntuple");
   int denEntries = t_den->GetEntries();
   int numEntries = t_num->GetEntries();
   int counter;
 
   double genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
   double recoCosThetaK, recoCosThetaL, recoPhi;
-  float recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
-  t_den->SetBranchAddress( "gen_cos_theta_k" , &genCosThetaK );
-  t_den->SetBranchAddress( "gen_cos_theta_l" , &genCosThetaL );
-  t_den->SetBranchAddress( "gen_phi_kst_mumu", &genPhi       );
-  t_den->SetBranchAddress( "genq2"           , &genDimuMass  );
-  t_den->SetBranchAddress( "genbPt"          , &genB0pT      );
-  t_den->SetBranchAddress( "genbEta"         , &genB0eta     );
+  double recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
+  t_den->SetBranchAddress( "cos_theta_k" , &genCosThetaK );
+  t_den->SetBranchAddress( "cos_theta_l" , &genCosThetaL );
+  t_den->SetBranchAddress( "phi_kst_mumu", &genPhi       );
+  t_den->SetBranchAddress( "genq2"       , &genDimuMass  );
+  t_den->SetBranchAddress( "genbPt"      , &genB0pT      );
+  t_den->SetBranchAddress( "genbEta"     , &genB0eta     );
   t_num->SetBranchAddress( "cos_theta_k" , &recoCosThetaK );
   t_num->SetBranchAddress( "cos_theta_l" , &recoCosThetaL );
   t_num->SetBranchAddress( "phi_kst_mumu", &recoPhi       );
@@ -97,7 +97,7 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
   t_num->SetBranchAddress( "genSignal"   , &genSignal     );
   t_num->SetBranchAddress( "tagB0"       , &tagB0         );
 
-  RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution after GEN-filter" , vars );
+  RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution before GEN-filter", vars );
   RooDataSet* numData = new RooDataSet( "numData", "RECO distribution after selections", vars ); 
 
   // Prepare denominator datasets
@@ -117,7 +117,7 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
     ctK.setVal(genCosThetaK);
     ctL.setVal(genCosThetaL);
     phi.setVal(genPhi);
-    data->add(vars);    
+    data->add(vars);
   }
 
   // Prepare numerator datasets
@@ -139,7 +139,7 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
     ctK.setVal(recoCosThetaK);
     ctL.setVal(recoCosThetaL);
     phi.setVal(recoPhi);
-    numData->add(vars);    
+    numData->add(vars);
   }
   cout<<"Dataset prepared"<<endl;
 
@@ -216,7 +216,7 @@ void createEffHistBin(int q2Bin, bool tagFlag, int xbins, int ybins, int zbins)
     cz1[confIndex]->Divide(5,5);
 
     // width of the slices in the hidden variables ("border" is half of it)
-    double border = 0.035;
+    double border = 0.075;
 
     // loop over slice grid
     for (int i=0; i<5; ++i) for (int j=0; j<5; ++j) {

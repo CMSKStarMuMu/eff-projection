@@ -142,21 +142,21 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   // Load ntuples
   TChain* t_den = new TChain();
   TChain* t_num = new TChain();
-  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN/2016MC_GEN_LMNR_double_sub*_p*.root/ntuple");
-  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/2016MC_RECO_p1p2p3_newtag_LMNR_addW_add4BDT_addvars_bestBDTv4.root/ntuple");
+  t_den->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN_NoFilter/GEN_BFilter_B0MuMuKstar_p*.root/ntuple");
+  t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/NtupleNov21/2016MC_LMNR_bdt0p96.root/ntuple");
   int denEntries = t_den->GetEntries();
   int numEntries = t_num->GetEntries();
   int counter;
 
   double genCosThetaK, genCosThetaL, genPhi, genDimuMass, genB0pT, genB0eta;
   double recoCosThetaK, recoCosThetaL, recoPhi;
-  float recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
-  t_den->SetBranchAddress( "gen_cos_theta_k" , &genCosThetaK );
-  t_den->SetBranchAddress( "gen_cos_theta_l" , &genCosThetaL );
-  t_den->SetBranchAddress( "gen_phi_kst_mumu", &genPhi       );
-  t_den->SetBranchAddress( "genq2"           , &genDimuMass  );
-  t_den->SetBranchAddress( "genbPt"          , &genB0pT      );
-  t_den->SetBranchAddress( "genbEta"         , &genB0eta     );
+  double recoDimuMass, recoB0pT, recoB0eta, genSignal, tagB0;
+  t_den->SetBranchAddress( "cos_theta_k" , &genCosThetaK );
+  t_den->SetBranchAddress( "cos_theta_l" , &genCosThetaL );
+  t_den->SetBranchAddress( "phi_kst_mumu", &genPhi       );
+  t_den->SetBranchAddress( "genq2"       , &genDimuMass  );
+  t_den->SetBranchAddress( "genbPt"      , &genB0pT      );
+  t_den->SetBranchAddress( "genbEta"     , &genB0eta     );
   t_num->SetBranchAddress( "cos_theta_k" , &recoCosThetaK );
   t_num->SetBranchAddress( "cos_theta_l" , &recoCosThetaL );
   t_num->SetBranchAddress( "phi_kst_mumu", &recoPhi       );
@@ -166,7 +166,7 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   t_num->SetBranchAddress( "genSignal"   , &genSignal     );
   t_num->SetBranchAddress( "tagB0"       , &tagB0         );
 
-  RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution after GEN-filter" , RooArgSet(vars,wei) );
+  RooDataSet* data    = new RooDataSet( "data"   , "GEN distribution before GEN-filter", RooArgSet(vars,wei) );
   RooDataSet* numData = new RooDataSet( "numData", "RECO distribution after selections", vars ); 
 
   // Set counter to evaluate size of negatine-efficiency regions
@@ -192,7 +192,7 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
     phi->setVal(genPhi);
     // set event weight based on local efficiency value
     wei.setVal( eff->getVal( vars ) );
-    data->add( RooArgSet(vars,wei) );    
+    data->add( RooArgSet(vars,wei) );
     // count negative efficiency values
     ++totalCounter;
     if ( wei.getValV() < 0 ) ++badCounter;
@@ -219,7 +219,7 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
     ctK->setVal(recoCosThetaK);
     ctL->setVal(recoCosThetaL);
     phi->setVal(recoPhi);
-    numData->add(vars);    
+    numData->add(vars);
   }
   cout<<"Dataset prepared"<<endl;
 
