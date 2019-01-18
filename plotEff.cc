@@ -84,7 +84,7 @@ void plotEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int
   RooRealVar* phi = ws->var("phi");
   RooArgSet vars (* ctK,* ctL,* phi);
   // set a variable for weights, to correct GEN distributions in closure test
-  RooRealVar wei ("wei","weight",0,1);
+  RooRealVar wei ("wei","weight",-1,1);
 
   // Plot efficiency projections
   gStyle->SetOptStat(0);
