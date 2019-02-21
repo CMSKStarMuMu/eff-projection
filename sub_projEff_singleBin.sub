@@ -1,0 +1,13 @@
+Executable  = run_projEff_singleBin.sh
+bin         = 2
+tag         = 0
+ord         = 8
+xbin        = ( $(ProcId) / 100 ) * 3 + 4
+ybin        = ( ( $(ProcId) % 100 ) / 10 ) * 2  + 4
+zbin        = ( $(ProcId) % 10 ) * 2 + 4
+Arguments   = $INT(bin) $INT(tag) $INT(ord) $INT(xbin) $INT(ybin) $INT(zbin)
+Log         = logs/sub_$(ClusterId).log
+Output      = logs/log_sub_projEff_singleBin_$INT(bin)_$INT(tag)_$INT(ord)_$INT(xbin)_$INT(ybin)_$INT(zbin).log
+Error       = logs/log_sub_projEff_singleBin_$INT(bin)_$INT(tag)_$INT(ord)_$INT(xbin)_$INT(ybin)_$INT(zbin).log
++JobFlavour = "microcentury"
+Queue 1000

@@ -81,7 +81,7 @@ void fit_recoMC_projEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int
   if (tagFlag) AnglesPDF = new PdfRT("AnglesPDF","AnglesPDF",*ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*EffCoeff,maxOrder);
   else         AnglesPDF = new PdfWT("AnglesPDF","AnglesPDF",*ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*EffCoeff,maxOrder);
 
-  RooFitResult * fitResult = AnglesPDF->fitTo(*data,Minimizer("Minuit2","migrad"),Save(true),Timer(true),NumCPU(6)); 
+  RooFitResult * fitResult = AnglesPDF->fitTo(*data,Minimizer("Minuit2","migrad"),Save(true),Timer(true),NumCPU(1)); 
   fitResult->Print("v");
 
   if (save) {
