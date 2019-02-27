@@ -14,14 +14,16 @@ TCanvas* cx1 [2*nBins];
 TCanvas* cy1 [2*nBins];
 TCanvas* cz1 [2*nBins];
 
-void projEff_spHarm_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins, bool plot);
+void projEff_spHarm_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins, int kernel, bool plot);
+
+void fillHists(TH3F* denHist, TH3F* numHist, RooDataSet* data, RooDataSet* numData, int nev);
 
 // RooRealVar ctK ("ctK","cos(#theta_{K})",-1,1);
 // RooRealVar ctL ("ctL","cos(#theta_{L})",-1,1);
 // RooRealVar phi ("phi","#phi",-TMath::Pi(),TMath::Pi());
 // RooArgSet vars (ctK, ctL, phi);
 
-void projEff_spHarm_fromDataset(int q2Bin, int tagFlag, int maxOrder = 5, int xbins=25, int ybins = 0, int zbins = 0, bool plot = true)
+void projEff_spHarm_fromDataset(int q2Bin, int tagFlag, int maxOrder = 5, int xbins=25, int ybins = 0, int zbins = 0, int kernel = 1000, bool plot = true)
 {
   // q2-bin format: [0-8] for one bin, [-1] for each bin recursively
   // tag format:    [1] correctly-tagged. [0] mistagged, [2] each tag, recursively
@@ -35,12 +37,12 @@ void projEff_spHarm_fromDataset(int q2Bin, int tagFlag, int maxOrder = 5, int xb
   if ( q2Bin > -1 && q2Bin < nBins ) {
     if (tagFlag < 2 && tagFlag > -1) {
       cout<<"Projecting efficiency for q2 bin "<<q2Bin<<(tagFlag==1?" correctly":" wrongly")<<" tagged events"<<endl;
-      projEff_spHarm_fromDatasetBin(q2Bin, (tagFlag==1), maxOrder, xbins, ybins, zbins, plot);
+      projEff_spHarm_fromDatasetBin(q2Bin, (tagFlag==1), maxOrder, xbins, ybins, zbins, kernel, plot);
     }
     if (tagFlag == 2) {
       cout<<"Projecting efficiency for q2 bin "<<q2Bin<<" correctly and wrongly tagged events"<<endl;
-      projEff_spHarm_fromDatasetBin(q2Bin, true,  maxOrder, xbins, ybins, zbins, plot);
-      projEff_spHarm_fromDatasetBin(q2Bin, false, maxOrder, xbins, ybins, zbins, plot);
+      projEff_spHarm_fromDatasetBin(q2Bin, true,  maxOrder, xbins, ybins, zbins, kernel, plot);
+      projEff_spHarm_fromDatasetBin(q2Bin, false, maxOrder, xbins, ybins, zbins, kernel, plot);
     }
   }
   if (q2Bin == -1) {
@@ -48,19 +50,19 @@ void projEff_spHarm_fromDataset(int q2Bin, int tagFlag, int maxOrder = 5, int xb
     for (q2Bin=0; q2Bin<nBins; ++q2Bin) {
       if (tagFlag < 2 && tagFlag > -1) {
 	cout<<endl<<"q2 bin "<<q2Bin<<(tagFlag==1?" correctly":" wrongly")<<" tagged events"<<endl;
-	projEff_spHarm_fromDatasetBin(q2Bin, (tagFlag==1), maxOrder, xbins, ybins, zbins, plot);
+	projEff_spHarm_fromDatasetBin(q2Bin, (tagFlag==1), maxOrder, xbins, ybins, zbins, kernel, plot);
       }
       if (tagFlag == 2) {
 	cout<<endl<<"q2 bin "<<q2Bin<<" correctly and wrongly tagged events"<<endl;
-	projEff_spHarm_fromDatasetBin(q2Bin, true,  maxOrder, xbins, ybins, zbins, plot);
-	projEff_spHarm_fromDatasetBin(q2Bin, false, maxOrder, xbins, ybins, zbins, plot);
+	projEff_spHarm_fromDatasetBin(q2Bin, true,  maxOrder, xbins, ybins, zbins, kernel, plot);
+	projEff_spHarm_fromDatasetBin(q2Bin, false, maxOrder, xbins, ybins, zbins, kernel, plot);
       }
     }
   }
   
 }
 
-void projEff_spHarm_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins, bool plot)
+void projEff_spHarm_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins, int kernel, bool plot)
 {
 
   string shortString = Form(tagFlag?"b%ict":"b%iwt",q2Bin);
@@ -86,14 +88,19 @@ void projEff_spHarm_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xb
   RooArgSet vars (* ctK,* ctL,* phi);
 
   // create numerator and denominator histograms
-  TH3D* denHist = (TH3D*)data   ->createHistogram( ("denHist"+shortString).c_str(),
-						   *ctK,     Binning(xbins,-1,1) ,
-						   YVar(*ctL,Binning(ybins,-1,1)),
-						   ZVar(*phi,Binning(zbins,-TMath::Pi(),TMath::Pi())) );
-  TH3D* numHist = (TH3D*)numData->createHistogram( ("numHist"+shortString).c_str(),
-						   *ctK,     Binning(xbins,-1,1) ,
-						   YVar(*ctL,Binning(ybins,-1,1)),
-						   ZVar(*phi,Binning(zbins,-TMath::Pi(),TMath::Pi())) );
+  // TH3D* denHist = (TH3D*)data   ->createHistogram( ("denHist"+shortString).c_str(),
+  // 						   *ctK,     Binning(xbins,-1,1) ,
+  // 						   YVar(*ctL,Binning(ybins,-1,1)),
+  // 						   ZVar(*phi,Binning(zbins,-TMath::Pi(),TMath::Pi())) );
+  // TH3D* numHist = (TH3D*)numData->createHistogram( ("numHist"+shortString).c_str(),
+  // 						   *ctK,     Binning(xbins,-1,1) ,
+  // 						   YVar(*ctL,Binning(ybins,-1,1)),
+  // 						   ZVar(*phi,Binning(zbins,-TMath::Pi(),TMath::Pi())) );
+  TH3F* denHist = new TH3F("denHist","denHist",xbins,-1,1,ybins,-1,1,zbins,-TMath::Pi(),TMath::Pi());
+  TH3F* numHist = new TH3F("numHist","numHist",xbins,-1,1,ybins,-1,1,zbins,-TMath::Pi(),TMath::Pi());
+  fillHists(denHist,numHist,data,numData,kernel);
+  denHist->Sumw2();
+  numHist->Sumw2();
 
   //Declare and initialise the functions and all the needed objects
   vector < RooRealVar* > factors;
@@ -214,7 +221,7 @@ void projEff_spHarm_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xb
   // save efficiency function to file
   RooWorkspace *wsp_out = new RooWorkspace("ws","Workspace with efficiency parameterisation");
   wsp_out->import( projectedFunc, Silence() );
-  wsp_out->writeToFile( ( Form("effProjection_sh%io_",maxOrder)+shortString+Form("_%i_%i_%i.root",xbins,ybins,zbins)).c_str() );
+  wsp_out->writeToFile( ( Form("effProjection_sh%io_",maxOrder)+shortString+Form("_k%i_%i_%i_%i.root",kernel,xbins,ybins,zbins)).c_str() );
 
   if (plot) {
     // Plot 1D slices of the efficiency function and binned efficiency
@@ -234,7 +241,7 @@ void projEff_spHarm_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xb
     TLegend* leg = new TLegend (0.35,0.8,0.9,0.9);
 
     // width of the slices in the hidden variables ("border" is half of it)
-    double border = 0.035;
+    double border = 0.005;
     // variables to be filled with global efficiency maximum
     double maxEffX = 0;
     double maxEffY = 0;
@@ -358,9 +365,134 @@ void projEff_spHarm_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xb
 	cz1[confIndex]->cd(5*j+i+1)->Update();
       }	
 
-    cx1[confIndex]->SaveAs( ("effProj_"+shortString+Form("_%i_%i_%i_CTKslices_sh%io_dp%i.pdf",xbins,ybins,zbins,maxOrder,(int)(border*200))).c_str() );
-    cy1[confIndex]->SaveAs( ("effProj_"+shortString+Form("_%i_%i_%i_CTLslices_sh%io_dp%i.pdf",xbins,ybins,zbins,maxOrder,(int)(border*200))).c_str() );
-    cz1[confIndex]->SaveAs( ("effProj_"+shortString+Form("_%i_%i_%i_PHIslices_sh%io_dp%i.pdf",xbins,ybins,zbins,maxOrder,(int)(border*200))).c_str() );
+    cx1[confIndex]->SaveAs( ("effProj_"+shortString+Form("_k%i_%i_%i_%i_CTKslices_sh%io_dp%i.pdf",kernel,xbins,ybins,zbins,maxOrder,(int)(border*200))).c_str() );
+    cy1[confIndex]->SaveAs( ("effProj_"+shortString+Form("_k%i_%i_%i_%i_CTLslices_sh%io_dp%i.pdf",kernel,xbins,ybins,zbins,maxOrder,(int)(border*200))).c_str() );
+    cz1[confIndex]->SaveAs( ("effProj_"+shortString+Form("_k%i_%i_%i_%i_PHIslices_sh%io_dp%i.pdf",kernel,xbins,ybins,zbins,maxOrder,(int)(border*200))).c_str() );
   }
   
+}
+
+void fillHists(TH3F* denHist, TH3F* numHist, RooDataSet* data, RooDataSet* numData, int nev)
+{
+  int nBins = denHist->GetNbinsX() * denHist->GetNbinsY() * denHist->GetNbinsZ();
+  double AvgRadSq = TMath::Power( 6.0*nev/TMath::Pi()/TMath::Pi()/data->sumEntries() , 2.0/3 );
+
+  vector < TH1F* > distNum;
+  vector < TH1F* > distDen;
+
+  int iBin;
+
+  for (iBin=0; iBin<nBins; ++iBin) {
+    distNum.push_back( new TH1F(Form("distNum%i",iBin),Form("distNum%i",iBin),100,0,AvgRadSq*10) );
+    distDen.push_back( new TH1F(Form("distDen%i",iBin),Form("distDen%i",iBin),100,0,AvgRadSq*10) );
+  }
+
+  double* xBinCenter = new double[denHist->GetNbinsX()];
+  double* yBinCenter = new double[denHist->GetNbinsY()];
+  double* zBinCenter = new double[denHist->GetNbinsZ()];
+  denHist->GetXaxis()->GetCenter(xBinCenter);
+  denHist->GetYaxis()->GetCenter(yBinCenter);
+  denHist->GetZaxis()->GetCenter(zBinCenter);
+
+  int iBinX, iBinY, iBinZ;
+  double xVal, yVal, zVal;
+
+  cout<<"Denominator preparation"<<endl;
+  int counter=0;
+  for (int iEv=0; iEv<data->sumEntries(); ++iEv) {
+    if ( iEv > counter ) {
+      cout<<counter*100/data->sumEntries()<<"%"<<endl;
+      counter+=data->sumEntries()/10;
+    }
+    
+    const RooArgSet *iPoint = data->get(iEv);
+    xVal = iPoint->getRealValue("ctK");
+    yVal = iPoint->getRealValue("ctL");
+    zVal = iPoint->getRealValue("phi");
+
+    for (iBinX=1; iBinX<=denHist->GetNbinsX(); ++iBinX)
+      for(iBinY=1; iBinY<=denHist->GetNbinsY(); ++iBinY)
+	for(iBinZ=1; iBinZ<=denHist->GetNbinsZ(); ++iBinZ) {
+	  
+	  iBin = (iBinX-1) + denHist->GetNbinsX() * ( (iBinY-1) + denHist->GetNbinsY() * (iBinZ-1) );
+	  // iBin = denHist->GetBin(iBinX,iBinY,iBinZ);
+	  if (iBin<0 || iBin>nBins-1) {cout<<"ERROR, bin index too high: "<<iBin<<" ("<<iBinX<<" "<<iBinY<<" "<<iBinZ<<") vs. a max of "<<nBins<<endl; return;}
+	  if ( pow(xVal-xBinCenter[iBinX-1],2) + pow(yVal-yBinCenter[iBinY-1],2) + pow((zVal-zBinCenter[iBinZ-1])/TMath::Pi(),2) > AvgRadSq*10 ) continue;
+
+	  distDen[iBin]->Fill( pow(xVal-xBinCenter[iBinX-1],2) + pow(yVal-yBinCenter[iBinY-1],2) + pow((zVal-zBinCenter[iBinZ-1])/TMath::Pi(),2) );
+          // mirrored entries
+          distDen[iBin]->Fill( pow(xVal+xBinCenter[iBinX-1]-2,2) + pow(yVal-yBinCenter[iBinY-1],2) + pow((zVal-zBinCenter[iBinZ-1])/TMath::Pi(),2) );
+          distDen[iBin]->Fill( pow(xVal+xBinCenter[iBinX-1]+2,2) + pow(yVal-yBinCenter[iBinY-1],2) + pow((zVal-zBinCenter[iBinZ-1])/TMath::Pi(),2) );
+          distDen[iBin]->Fill( pow(xVal-xBinCenter[iBinX-1],2) + pow(yVal+yBinCenter[iBinY-1]-2,2) + pow((zVal-zBinCenter[iBinZ-1])/TMath::Pi(),2) );
+          distDen[iBin]->Fill( pow(xVal-xBinCenter[iBinX-1],2) + pow(yVal+yBinCenter[iBinY-1]+2,2) + pow((zVal-zBinCenter[iBinZ-1])/TMath::Pi(),2) );
+          distDen[iBin]->Fill( pow(xVal-xBinCenter[iBinX-1],2) + pow(yVal-yBinCenter[iBinY-1],2) + pow((zVal+zBinCenter[iBinZ-1])/TMath::Pi()-2,2) );
+          distDen[iBin]->Fill( pow(xVal-xBinCenter[iBinX-1],2) + pow(yVal-yBinCenter[iBinY-1],2) + pow((zVal+zBinCenter[iBinZ-1])/TMath::Pi()+2,2) );
+
+	}
+
+  }
+
+  cout<<"Numerator preparation"<<endl;
+  counter=0;
+  for (int iEv=0; iEv<numData->sumEntries(); ++iEv) {
+    if ( iEv > counter ) {
+      cout<<counter*100/numData->sumEntries()<<"%"<<endl;
+      counter+=numData->sumEntries()/10;
+    }
+    
+    const RooArgSet *iPoint = numData->get(iEv);
+    xVal = iPoint->getRealValue("ctK");
+    yVal = iPoint->getRealValue("ctL");
+    zVal = iPoint->getRealValue("phi");
+
+    for (iBinX=1; iBinX<=denHist->GetNbinsX(); ++iBinX)
+      for (iBinY=1; iBinY<=denHist->GetNbinsY(); ++iBinY)
+	for (iBinZ=1; iBinZ<=denHist->GetNbinsZ(); ++iBinZ) {
+	  
+	  iBin = (iBinX-1) + denHist->GetNbinsX() * ( (iBinY-1) + denHist->GetNbinsY() * (iBinZ-1) );
+	  // iBin = denHist->GetBin(iBinX,iBinY,iBinZ);
+	  if (iBin<0 || iBin>nBins-1) {cout<<"ERROR, bin index too high: "<<iBin<<" ("<<iBinX<<" "<<iBinY<<" "<<iBinZ<<") vs. a max of "<<nBins<<endl; return;}
+	  if ( pow(xVal-xBinCenter[iBinX-1],2) + pow(yVal-yBinCenter[iBinY-1],2) + pow((zVal-zBinCenter[iBinZ-1])/TMath::Pi(),2) > AvgRadSq*10 ) continue;
+	  
+	  distNum[iBin]->Fill( pow(xVal-xBinCenter[iBinX-1],2) + pow(yVal-yBinCenter[iBinY-1],2) + pow((zVal-zBinCenter[iBinZ-1])/TMath::Pi(),2) );
+          // mirrored entries
+          distNum[iBin]->Fill( pow(xVal+xBinCenter[iBinX-1]-2,2) + pow(yVal-yBinCenter[iBinY-1],2) + pow((zVal-zBinCenter[iBinZ-1])/TMath::Pi(),2) );
+          distNum[iBin]->Fill( pow(xVal+xBinCenter[iBinX-1]+2,2) + pow(yVal-yBinCenter[iBinY-1],2) + pow((zVal-zBinCenter[iBinZ-1])/TMath::Pi(),2) );
+          distNum[iBin]->Fill( pow(xVal-xBinCenter[iBinX-1],2) + pow(yVal+yBinCenter[iBinY-1]-2,2) + pow((zVal-zBinCenter[iBinZ-1])/TMath::Pi(),2) );
+          distNum[iBin]->Fill( pow(xVal-xBinCenter[iBinX-1],2) + pow(yVal+yBinCenter[iBinY-1]+2,2) + pow((zVal-zBinCenter[iBinZ-1])/TMath::Pi(),2) );
+          distNum[iBin]->Fill( pow(xVal-xBinCenter[iBinX-1],2) + pow(yVal-yBinCenter[iBinY-1],2) + pow((zVal+zBinCenter[iBinZ-1])/TMath::Pi()-2,2) );
+          distNum[iBin]->Fill( pow(xVal-xBinCenter[iBinX-1],2) + pow(yVal-yBinCenter[iBinY-1],2) + pow((zVal+zBinCenter[iBinZ-1])/TMath::Pi()+2,2) );
+	  
+	}
+
+  }
+
+  for (iBinX=1; iBinX<=denHist->GetNbinsX(); ++iBinX)
+    for (iBinY=1; iBinY<=denHist->GetNbinsY(); ++iBinY)
+      for (iBinZ=1; iBinZ<=denHist->GetNbinsZ(); ++iBinZ) {
+
+	iBin = denHist->GetBin(iBinX,iBinY,iBinZ);
+	int binCount = (iBinX-1) + denHist->GetNbinsX() * ( (iBinY-1) + denHist->GetNbinsY() * (iBinZ-1) );
+
+	int maxBin = 1;
+	while ( maxBin < 100 && distDen[binCount]->Integral(1,maxBin) < nev ) ++maxBin;
+
+	// cout<<"("<<iBinX<<" "<<iBinY<<" "<<iBinZ<<") range: 1->"<<maxBin<<
+	//   " num="<<distNum[binCount]->Integral(1,maxBin)<<" den="<<distDen[binCount]->Integral(1,maxBin)<<endl;
+
+	if ( distDen[binCount]->Integral(1,maxBin) >= distNum[binCount]->Integral(1,maxBin) ) {
+	  numHist->SetBinContent(iBin, distNum[binCount]->Integral(1,maxBin));
+	  denHist->SetBinContent(iBin, distDen[binCount]->Integral(1,maxBin));
+	} else {
+	  cout<<"ERROR, numerator count exceeding denominator count: "<<
+	    distNum[binCount]->Integral(1,maxBin)<<" vs. "<<distDen[binCount]->Integral(1,maxBin)<<" ("<<iBinX<<" "<<iBinY<<" "<<iBinZ<<")"<<endl;
+	  numHist->SetBinContent(iBin, distDen[binCount]->Integral(1,maxBin));
+	  denHist->SetBinContent(iBin, distDen[binCount]->Integral(1,maxBin));
+	}
+
+	numHist->SetBinError(iBin, sqrt(numHist->GetBinContent(iBin)));
+	denHist->SetBinError(iBin, sqrt(denHist->GetBinContent(iBin)));
+	  
+      }
+
 }

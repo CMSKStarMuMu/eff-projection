@@ -13,15 +13,18 @@ ord=${3}
 xbin=${4}
 ybin=${5}
 zbin=${6}
+kern=${7}
 
-root -l -b -q 'projEff_spHarm_fromDataset.cc('${bin}','${tag}','${ord}','${xbin}','${ybin}','${zbin}',false)' \
-    &>logs/log_sub_projEff_singleBin_${bin}_${tag}_${ord}_${xbin}_${ybin}_${zbin}.out
-root -l -b -q 'plotEff_fromDataset.cc('${bin}','${tag}','${ord}','${xbin}','${ybin}','${zbin}',false)' \
-    &>>logs/log_sub_projEff_singleBin_${bin}_${tag}_${ord}_${xbin}_${ybin}_${zbin}.out
-IFS=$' ' command eval 'XYZ=($(tail -n1 logs/log_sub_projEff_singleBin_'${bin}'_'${tag}'_'${ord}'_'${xbin}'_'${ybin}'_'${zbin}'.out))'
-echo "${xbin} ${ybin} ${zbin} ${XYZ[6]}" >> list_neg_eff_${bin}_${tag}_${ord}.list 
+root -l -b -q 'projEff_spHarm_fromDataset.cc('${bin}','${tag}','${ord}','${xbin}','${ybin}','${zbin}','${kern}',false)' \
+    &>logs/log_sub_projEff_singleBin_${bin}_${tag}_${ord}_${xbin}_${ybin}_${zbin}_${kern}.out
+root -l -b -q 'plotEff_fromDataset.cc('${bin}','${tag}','${ord}','${xbin}','${ybin}','${zbin}','${kern}',false)' \
+    &>>logs/log_sub_projEff_singleBin_${bin}_${tag}_${ord}_${xbin}_${ybin}_${zbin}_${kern}.out
+IFS=$' ' command eval 'XYZ=($(tail -n1 logs/log_sub_projEff_singleBin_'${bin}'_'${tag}'_'${ord}'_'${xbin}'_'${ybin}'_'${zbin}'_'${kern}'.out))'
+echo "${xbin} ${ybin} ${zbin} ${XYZ[6]}" >> list_neg_eff_${bin}_${tag}_${ord}_${kern}.list 
 if [ "${XYZ[6]}" = "0" ]; then
-    ./fit_recoMC_projEff ${bin} ${tag} ${ord} ${xbin} ${ybin} ${zbin} 0 \
-	&>logs/log_fit_recoMC_projEff_${bin}_${tag}_${ord}_${xbin}_${ybin}_${zbin}.out
+    ./fit_recoMC_projEff ${bin} ${tag} ${ord} ${xbin} ${ybin} ${zbin} ${kern} 0 \
+	&>logs/log_fit_recoMC_projEff_${bin}_${tag}_${ord}_${xbin}_${ybin}_${zbin}_${kern}.out
 fi
 echo "done"
+
+# exit 0

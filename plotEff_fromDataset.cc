@@ -11,13 +11,13 @@ using namespace std;
 static const int nBins = 9;
 float binBorders [nBins+1] = { 1, 2, 4.3, 6, 8.68, 10.09, 12.86, 14.18, 16, 19};
 
-void plotEff_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins, bool plot);
+void plotEff_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins, int kernel, bool plot);
 
 TCanvas* c  [2*nBins];
 TCanvas* c1 [2*nBins];
 TCanvas* c3 [2*nBins];
 
-void plotEff_fromDataset(int q2Bin, int tagFlag, int maxOrder, int xbins=25, int ybins = 0, int zbins = 0, bool plot = true)
+void plotEff_fromDataset(int q2Bin, int tagFlag, int maxOrder, int xbins=25, int ybins = 0, int zbins = 0, int kernel = 1000, bool plot = true)
 {
   // q2-bin format: [0-8] for one bin, [-1] for each bin recursively
   // tag format:    [1] correctly-tagged. [0] mistagged, [2] each tag, recursively
@@ -31,12 +31,12 @@ void plotEff_fromDataset(int q2Bin, int tagFlag, int maxOrder, int xbins=25, int
   if ( q2Bin > -1 && q2Bin < nBins ) {
     if (tagFlag < 2 && tagFlag > -1) {
       cout<<"Plotting efficiency for q2 bin "<<q2Bin<<(tagFlag==1?" correctly":" wrongly")<<" tagged events"<<endl;
-      plotEff_fromDatasetBin(q2Bin, (tagFlag==1), maxOrder, xbins, ybins, zbins, plot);
+      plotEff_fromDatasetBin(q2Bin, (tagFlag==1), maxOrder, xbins, ybins, zbins, kernel, plot);
     }
     if (tagFlag == 2) {
       cout<<"Plotting efficiency for q2 bin "<<q2Bin<<" correctly and wrongly tagged events"<<endl;
-      plotEff_fromDatasetBin(q2Bin, true,  maxOrder, xbins, ybins, zbins, plot);
-      plotEff_fromDatasetBin(q2Bin, false, maxOrder, xbins, ybins, zbins, plot);
+      plotEff_fromDatasetBin(q2Bin, true,  maxOrder, xbins, ybins, zbins, kernel, plot);
+      plotEff_fromDatasetBin(q2Bin, false, maxOrder, xbins, ybins, zbins, kernel, plot);
     }
   }
   if (q2Bin == -1) {
@@ -44,19 +44,19 @@ void plotEff_fromDataset(int q2Bin, int tagFlag, int maxOrder, int xbins=25, int
     for (q2Bin=0; q2Bin<nBins; ++q2Bin) {
       if (tagFlag < 2 && tagFlag > -1) {
 	cout<<endl<<"q2 bin "<<q2Bin<<(tagFlag==1?" correctly":" wrongly")<<" tagged events"<<endl;
-	plotEff_fromDatasetBin(q2Bin, (tagFlag==1), maxOrder, xbins, ybins, zbins, plot);
+	plotEff_fromDatasetBin(q2Bin, (tagFlag==1), maxOrder, xbins, ybins, zbins, kernel, plot);
       }
       if (tagFlag == 2) {
 	cout<<endl<<"q2 bin "<<q2Bin<<" correctly and wrongly tagged events"<<endl;
-	plotEff_fromDatasetBin(q2Bin, true,  maxOrder, xbins, ybins, zbins, plot);
-	plotEff_fromDatasetBin(q2Bin, false, maxOrder, xbins, ybins, zbins, plot);
+	plotEff_fromDatasetBin(q2Bin, true,  maxOrder, xbins, ybins, zbins, kernel, plot);
+	plotEff_fromDatasetBin(q2Bin, false, maxOrder, xbins, ybins, zbins, kernel, plot);
       }
     }
   }
   
 }
 
-void plotEff_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins, bool plot)
+void plotEff_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins, int kernel, bool plot)
 {
 
   string shortString = Form(tagFlag?"b%ict":"b%iwt",q2Bin);
@@ -82,19 +82,19 @@ void plotEff_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, in
   RooArgSet vars (* ctK,* ctL,* phi);
 
   // open file with efficiency and import efficiency function
-  TFile* fin = new TFile( ( Form("effProjection_sh%io_",maxOrder)+shortString+Form("_%i_%i_%i.root",xbins,ybins,zbins)).c_str(), "READ" );
+  TFile* fin = new TFile( ( Form("effProjection_sh%io_",maxOrder)+shortString+Form("_k%i_%i_%i_%i.root",kernel,xbins,ybins,zbins)).c_str(), "READ" );
   if ( !fin || !fin->IsOpen() ) {
-    cout<<Form("File not found: effProjection_sh%io_",maxOrder)<<shortString<<Form("_%i_%i_%i.root",xbins,ybins,zbins)<<endl;
+    cout<<Form("File not found: effProjection_sh%io_",maxOrder)<<shortString<<Form("_k%i_%i_%i_%i.root",kernel,xbins,ybins,zbins)<<endl;
     return;
   }
   RooWorkspace* ws = (RooWorkspace*)fin->Get("ws");
   if ( !ws || ws->IsZombie() ) {
-    cout<<Form("Workspace not found in file: effProjection_sh%io_",maxOrder)<<shortString<<Form("_%i_%i_%i.root",xbins,ybins,zbins)<<endl;
+    cout<<Form("Workspace not found in file: effProjection_sh%io_",maxOrder)<<shortString<<Form("_k%i_%i_%i_%i.root",kernel,xbins,ybins,zbins)<<endl;
     return;
   } 
   RooAbsReal* eff = ws->function("projectedFunc");
   if ( !eff || eff->IsZombie() ) {
-    cout<<Form("Efficiency not found in file: effProjection_sh%io_",maxOrder)<<shortString<<Form("_%i_%i_%i.root",xbins,ybins,zbins)<<endl;
+    cout<<Form("Efficiency not found in file: effProjection_sh%io_",maxOrder)<<shortString<<Form("_k%i_%i_%i_%i.root",kernel,xbins,ybins,zbins)<<endl;
     return;
   } 
 
@@ -127,7 +127,7 @@ void plotEff_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, in
     h3_y->Draw();
     c1[confIndex]->cd(3);
     h3_z->Draw();
-    c1[confIndex]->SaveAs( ("effProj_"+shortString+Form("_%i_%i_%i_1DProj_sh%io.pdf",xbins,ybins,zbins,maxOrder)).c_str() );
+    c1[confIndex]->SaveAs( ("effProj_"+shortString+Form("_k%i_%i_%i_%i_1DProj_sh%io.pdf",kernel,xbins,ybins,zbins,maxOrder)).c_str() );
 
     // 2D projections
     c3[confIndex] = new TCanvas(Form("c3-%i",confIndex),("Efficiency 2D projections - "+longString).c_str(),1800,800);
@@ -150,7 +150,7 @@ void plotEff_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, in
     h3_xz->Draw("SURF3");
     c3[confIndex]->cd(3);
     h3_yz->Draw("SURF3");
-    c3[confIndex]->SaveAs( ("effProj_"+shortString+Form("_%i_%i_%i_2DProj_sh%io.pdf",xbins,ybins,zbins,maxOrder)).c_str() );
+    c3[confIndex]->SaveAs( ("effProj_"+shortString+Form("_k%i_%i_%i_%i_2DProj_sh%io.pdf",kernel,xbins,ybins,zbins,maxOrder)).c_str() );
   }
 
   RooAbsReal* effVal = (RooAbsReal*)data->addColumn(*eff);
@@ -201,7 +201,7 @@ void plotEff_fromDatasetBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, in
   zframe->Draw();
   leg->Draw("same");
 
-  c[confIndex]->SaveAs( ("closure_"+shortString+Form("_%i_%i_%i_sh%io.pdf",xbins,ybins,zbins,maxOrder)).c_str() );
+  c[confIndex]->SaveAs( ("closure_"+shortString+Form("_k%i_%i_%i_%i_sh%io.pdf",kernel,xbins,ybins,zbins,maxOrder)).c_str() );
 
 }
 

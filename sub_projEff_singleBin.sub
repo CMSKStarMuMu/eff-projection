@@ -1,13 +1,14 @@
 Executable  = run_projEff_singleBin.sh
-bin         = 2
+bin         = 3
 tag         = 0
-ord         = 8
-xbin        = ( $(ProcId) / 100 ) * 3 + 4
-ybin        = ( ( $(ProcId) % 100 ) / 10 ) * 2  + 4
-zbin        = ( $(ProcId) % 10 ) * 2 + 4
-Arguments   = $INT(bin) $INT(tag) $INT(ord) $INT(xbin) $INT(ybin) $INT(zbin)
+ord         = ( $(ProcId) / 343 ) + 4
+xbin        = ( ( $(ProcId) % 343 ) / 49 ) * 3 + 3
+ybin        = ( ( $(ProcId) % 49 ) / 7 ) * 3  + 3
+zbin        = ( $(ProcId) % 7 ) * 3 + 3
+kern	    = 25000
+Arguments   = $INT(bin) $INT(tag) $INT(ord) $INT(xbin) $INT(ybin) $INT(zbin) $INT(kern)
 Log         = logs/sub_$(ClusterId).log
-Output      = logs/log_sub_projEff_singleBin_$INT(bin)_$INT(tag)_$INT(ord)_$INT(xbin)_$INT(ybin)_$INT(zbin).log
-Error       = logs/log_sub_projEff_singleBin_$INT(bin)_$INT(tag)_$INT(ord)_$INT(xbin)_$INT(ybin)_$INT(zbin).log
-+JobFlavour = "microcentury"
-Queue 1000
+Output      = logs/log_sub_projEff_singleBin_$INT(bin)_$INT(tag)_$INT(ord)_$INT(xbin)_$INT(ybin)_$INT(zbin)_$INT(kern).log
+Error       = logs/log_sub_projEff_singleBin_$INT(bin)_$INT(tag)_$INT(ord)_$INT(xbin)_$INT(ybin)_$INT(zbin)_$INT(kern).log
++JobFlavour = "workday"
+Queue 1715

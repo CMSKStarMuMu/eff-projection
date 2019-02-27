@@ -23,7 +23,7 @@ float binBorders [nBins+1] = { 1, 2, 4.3, 6, 8.68, 10.09, 12.86, 14.18, 16, 19};
 
 TCanvas* c [2*nBins];
 
-void fit_recoMC_projEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins, bool plot, bool save)
+void fit_recoMC_projEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int ybins, int zbins, int kernel, bool plot, bool save)
 {
 
   string shortString = Form(tagFlag?"b%ict":"b%iwt",q2Bin);
@@ -48,14 +48,14 @@ void fit_recoMC_projEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int
   RooArgSet vars (* ctK,* ctL,* phi);
 
   // open file with efficiency and import efficiency coefficients
-  TFile* fin_eff = new TFile( ( Form("effProjection_sh%io_",maxOrder)+shortString+Form("_%i_%i_%i.root",xbins,ybins,zbins)).c_str(), "READ" );
+  TFile* fin_eff = new TFile( ( Form("effProjection_sh%io_",maxOrder)+shortString+Form("_k%i_%i_%i_%i.root",kernel,xbins,ybins,zbins)).c_str(), "READ" );
   if ( !fin_eff || !fin_eff->IsOpen() ) {
-    cout<<Form("File not found: effProjection_sh%io_",maxOrder)<<shortString<<Form("_%i_%i_%i.root",xbins,ybins,zbins)<<endl;
+    cout<<Form("File not found: effProjection_sh%io_",maxOrder)<<shortString<<Form("_k%i_%i_%i_%i.root",kernel,xbins,ybins,zbins)<<endl;
     return;
   }
   RooWorkspace* ws_eff = (RooWorkspace*)fin_eff->Get("ws");
   if ( !ws_eff || ws_eff->IsZombie() ) {
-    cout<<Form("Workspace not found in file: effProjection_sh%io_",maxOrder)<<shortString<<Form("_%i_%i_%i.root",xbins,ybins,zbins)<<endl;
+    cout<<Form("Workspace not found in file: effProjection_sh%io_",maxOrder)<<shortString<<Form("_k%i_%i_%i_%i.root",kernel,xbins,ybins,zbins)<<endl;
     return;
   } 
 
@@ -85,7 +85,7 @@ void fit_recoMC_projEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int
   fitResult->Print("v");
 
   if (save) {
-    TFile f (("fitResult_recoMC_"+shortString+Form("_%i_%i_%i_sh%io.root",xbins,ybins,zbins,maxOrder)).c_str(),"UPDATE") ;
+    TFile f (("fitResult_recoMC_"+shortString+Form("_k%i_%i_%i_%i_sh%io.root",kernel,xbins,ybins,zbins,maxOrder)).c_str(),"UPDATE") ;
     f.cd();
     fitResult->Write("fitResult");
     f.Close();
@@ -132,7 +132,7 @@ void fit_recoMC_projEffBin(int q2Bin, bool tagFlag, int maxOrder, int xbins, int
   zframe->Draw();
   leg->Draw("same");
 
-  c[confIndex]->SaveAs( ("fitResult_recoMC_"+shortString+Form("_%i_%i_%i_sh%io.pdf",xbins,ybins,zbins,maxOrder)).c_str() );
+  c[confIndex]->SaveAs( ("fitResult_recoMC_"+shortString+Form("_k%i_%i_%i_%i_sh%io.pdf",kernel,xbins,ybins,zbins,maxOrder)).c_str() );
 
 }
 
@@ -152,29 +152,33 @@ int main(int argc, char** argv)
   int ybins = 0;
   int zbins = 0;
 
-  if ( argc >= 5)  xbins = atoi(argv[4]);
-  if ( argc >= 6)  ybins = atoi(argv[5]);
-  if ( argc >= 7)  zbins = atoi(argv[6]);
+  if ( argc >= 5 ) xbins = atoi(argv[4]);
+  if ( argc >= 6 ) ybins = atoi(argv[5]);
+  if ( argc >= 7 ) zbins = atoi(argv[6]);
 
   if ( ybins<1 ) ybins = xbins;
   if ( zbins<1 ) zbins = xbins;
   if ( xbins<1 ) return 1;
 
+  int kernel = 1000;
+
+  if ( argc >= 8 ) kernel = atoi(argv[7]);
+
   bool plot = true;
   bool save = true;
 
-  if ( argc >= 8 && atoi(argv[7]) == 0 ) plot = false;
-  if ( argc >= 9 && atoi(argv[8]) == 0 ) save = false;
+  if ( argc >= 9  && atoi(argv[8]) == 0 ) plot = false;
+  if ( argc >= 10 && atoi(argv[9]) == 0 ) save = false;
 
   if ( q2Bin > -1 && q2Bin < nBins ) {
     if (tagFlag < 2 && tagFlag > -1) {
       cout<<"Fitting post-selection distributions for q2 bin "<<q2Bin<<(tagFlag==1?" correctly":" wrongly")<<" tagged events"<<endl;
-      fit_recoMC_projEffBin(q2Bin, (tagFlag==1), maxOrder, xbins, ybins, zbins, plot, save);
+      fit_recoMC_projEffBin(q2Bin, (tagFlag==1), maxOrder, xbins, ybins, zbins, kernel, plot, save);
     }
     if (tagFlag == 2) {
       cout<<"Fitting post-selection distributions for q2 bin "<<q2Bin<<" correctly and wrongly tagged events"<<endl;
-      fit_recoMC_projEffBin(q2Bin, true,  maxOrder, xbins, ybins, zbins, plot, save);
-      fit_recoMC_projEffBin(q2Bin, false, maxOrder, xbins, ybins, zbins, plot, save);
+      fit_recoMC_projEffBin(q2Bin, true,  maxOrder, xbins, ybins, zbins, kernel, plot, save);
+      fit_recoMC_projEffBin(q2Bin, false, maxOrder, xbins, ybins, zbins, kernel, plot, save);
     }
   }
   if (q2Bin == -1) {
@@ -182,12 +186,12 @@ int main(int argc, char** argv)
     for (q2Bin=0; q2Bin<nBins; ++q2Bin) {
       if (tagFlag < 2 && tagFlag > -1) {
 	cout<<endl<<"q2 bin "<<q2Bin<<(tagFlag==1?" correctly":" wrongly")<<" tagged events"<<endl;
-	fit_recoMC_projEffBin(q2Bin, (tagFlag==1), maxOrder, xbins, ybins, zbins, plot, save);
+	fit_recoMC_projEffBin(q2Bin, (tagFlag==1), maxOrder, xbins, ybins, zbins, kernel, plot, save);
       }
       if (tagFlag == 2) {
 	cout<<endl<<"q2 bin "<<q2Bin<<" correctly and wrongly tagged events"<<endl;
-	fit_recoMC_projEffBin(q2Bin, true,  maxOrder, xbins, ybins, zbins, plot, save);
-	fit_recoMC_projEffBin(q2Bin, false, maxOrder, xbins, ybins, zbins, plot, save);
+	fit_recoMC_projEffBin(q2Bin, true,  maxOrder, xbins, ybins, zbins, kernel, plot, save);
+	fit_recoMC_projEffBin(q2Bin, false, maxOrder, xbins, ybins, zbins, kernel, plot, save);
       }
     }
   }
